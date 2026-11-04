@@ -1,0 +1,10 @@
+.*
+!.gitignore
+
+build/
+captures/
+*.apk
+*.aab
+
+local.properties
+*.iml
