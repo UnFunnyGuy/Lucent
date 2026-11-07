@@ -25,3 +25,12 @@ dependencyResolutionManagement {
 
 rootProject.name = "Lucent"
 include(":app")
+include(":core:common")
+include(":core:security")
+include(":core:network")
+include(":core:designsystem")
+include(":core:datastore")
+include(":core:database")
+include(":core:ui")
+include(":core:navigation")
+
