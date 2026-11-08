@@ -34,3 +34,15 @@ include(":core:database")
 include(":core:ui")
 include(":core:navigation")
 
+include(":data:auth:api")
+include(":data:auth:impl")
+
+include(":data:accounts:api")
+include(":data:accounts:impl")
+
+include(":data:transactions:api")
+include(":data:transactions:impl")
+
+include(":data:sync:api")
+include(":data:sync:impl")
+
