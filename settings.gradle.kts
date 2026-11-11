@@ -46,3 +46,12 @@ include(":data:transactions:impl")
 include(":data:sync:api")
 include(":data:sync:impl")
 
+include(":feature:onboarding:api")
+include(":feature:onboarding:impl")
+
+include(":feature:dashboard:api")
+include(":feature:dashboard:impl")
+
+include(":feature:capture:api")
+include(":feature:capture:impl")
+
