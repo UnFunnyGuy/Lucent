@@ -8,3 +8,41 @@ captures/
 
 local.properties
 *.iml
+
+# Built application files
+*.ap_
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio
+.navigation/
+.externalNativeBuild/
+.cxx/
+
+# Android Profiling
+*.hprof
+
+# Log files
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+*~
+
+# Misc
+*.swp
+*.swo
+*.orig
+*.bak
