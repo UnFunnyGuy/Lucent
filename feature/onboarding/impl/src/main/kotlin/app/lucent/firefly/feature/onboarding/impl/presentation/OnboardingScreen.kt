@@ -1,19 +1,26 @@
 package app.lucent.firefly.feature.onboarding.impl.presentation
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import app.lucent.firefly.core.common.base.ObserveAsEvents
 import app.lucent.firefly.core.common.base.collectState
 import app.lucent.firefly.core.designsystem.theme.LucentTheme
-import app.lucent.firefly.core.ui.component.ScreenWrapper
+import app.lucent.firefly.core.ui.component.AppScaffold
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiAction
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiEvent
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiState
@@ -46,6 +53,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun OnboardingRoute(
     viewModel: OnboardingViewModel = koinViewModel(),
     onNavigateToDashboard: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val state by viewModel.collectState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -65,6 +73,7 @@ fun OnboardingRoute(
     OnboardingScreen(
         state = state,
         onAction = viewModel::onAction,
+        modifier = modifier,
         snackbarHostState = snackbarHostState,
     )
 }
@@ -76,118 +85,135 @@ fun OnboardingRoute(
 fun OnboardingScreen(
     state: OnboardingUiState,
     onAction: (OnboardingUiAction) -> Unit,
+    modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState? = null,
 ) {
     val focusManager = LocalFocusManager.current
 
-    ScreenWrapper(
-        snackbarHostState = snackbarHostState,
-        scrollable = true,
-        applyImePadding = true,
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = "Welcome to Lucent",
-            style = MaterialTheme.typography.headlineMedium,
-            color = LucentTheme.colors.primary,
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Connect to your Firefly III server",
-            style = MaterialTheme.typography.bodyMedium,
-            color = LucentTheme.colors.onSurfaceVariant,
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Server URL input
-        OutlinedTextField(
-            value = state.serverUrl,
-            onValueChange = { onAction(OnboardingUiAction.UpdateServerUrl(it)) },
-            label = { Text("Server URL") },
-            placeholder = { Text("https://firefly.example.com") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Next,
-                ),
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Self-signed certificate toggle
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+    AppScaffold(
+        modifier = modifier,
+        snackbarHost = {
+            if (snackbarHostState != null) {
+                SnackbarHost(hostState = snackbarHostState)
+            }
+        },
+    ) { innerPadding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = LucentTheme.dimensions.paddingMedium,
+                        vertical = LucentTheme.dimensions.paddingMedium,
+                    ),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Checkbox(
-                checked = state.allowSelfSignedCert,
-                onCheckedChange = { onAction(OnboardingUiAction.UpdateAllowSelfSignedCert(it)) },
-            )
-            Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Trust self-signed / homelab TLS certificate",
-                style = MaterialTheme.typography.bodySmall,
-                color = LucentTheme.colors.onBackground,
+                text = "Welcome to Lucent",
+                style = MaterialTheme.typography.headlineMedium,
+                color = LucentTheme.colors.primary,
             )
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-        // Personal Access Token input
-        OutlinedTextField(
-            value = state.token,
-            onValueChange = { onAction(OnboardingUiAction.UpdateToken(it)) },
-            label = { Text("Personal Access Token (PAT)") },
-            placeholder = { Text("Paste your Firefly III token") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions =
-                KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-            keyboardActions =
-                KeyboardActions(
-                    onDone = {
+            Text(
+                text = "Connect to your Firefly III server",
+                style = MaterialTheme.typography.bodyMedium,
+                color = LucentTheme.colors.onSurfaceVariant,
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Server URL input
+            OutlinedTextField(
+                value = state.serverUrl,
+                onValueChange = { onAction(OnboardingUiAction.UpdateServerUrl(it)) },
+                label = { Text("Server URL") },
+                placeholder = { Text("https://firefly.example.com") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Uri,
+                        imeAction = ImeAction.Next,
+                    ),
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Self-signed certificate toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Checkbox(
+                    checked = state.allowSelfSignedCert,
+                    onCheckedChange = { onAction(OnboardingUiAction.UpdateAllowSelfSignedCert(it)) },
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Trust self-signed / homelab TLS certificate",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LucentTheme.colors.onBackground,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Personal Access Token input
+            OutlinedTextField(
+                value = state.token,
+                onValueChange = { onAction(OnboardingUiAction.UpdateToken(it)) },
+                label = { Text("Personal Access Token (PAT)") },
+                placeholder = { Text("Paste your Firefly III token") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions =
+                    KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                keyboardActions =
+                    KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                            onAction(OnboardingUiAction.Connect)
+                        },
+                    ),
+            )
+
+            // Error message display
+            if (state.errorMessage != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = state.errorMessage,
+                    color = LucentTheme.colors.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            if (state.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(36.dp),
+                    color = LucentTheme.colors.primary,
+                )
+            } else {
+                Button(
+                    onClick = {
                         focusManager.clearFocus()
                         onAction(OnboardingUiAction.Connect)
                     },
-                ),
-        )
-
-        // Error message display
-        if (state.errorMessage != null) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = state.errorMessage,
-                color = LucentTheme.colors.error,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        if (state.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(36.dp),
-                color = LucentTheme.colors.primary,
-            )
-        } else {
-            Button(
-                onClick = {
-                    focusManager.clearFocus()
-                    onAction(OnboardingUiAction.Connect)
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Connect")
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Connect")
+                }
             }
         }
     }

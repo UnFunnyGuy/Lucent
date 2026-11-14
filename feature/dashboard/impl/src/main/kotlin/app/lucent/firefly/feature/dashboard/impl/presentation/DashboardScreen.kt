@@ -48,7 +48,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -83,6 +82,7 @@ import app.lucent.firefly.core.common.base.collectState
 import app.lucent.firefly.core.common.model.Currency
 import app.lucent.firefly.core.common.model.Money
 import app.lucent.firefly.core.designsystem.theme.LucentTheme
+import app.lucent.firefly.core.ui.component.AppScaffold
 import app.lucent.firefly.core.ui.format.formatAmount
 import app.lucent.firefly.data.accounts.api.model.Account
 import app.lucent.firefly.data.accounts.api.model.AccountType
@@ -153,9 +153,8 @@ fun DashboardScreen(
         }
     }
 
-    Scaffold(
+    AppScaffold(
         modifier = modifier,
-        containerColor = LucentTheme.colors.background,
         topBar = {
             DashboardTopBar(
                 state = state,
