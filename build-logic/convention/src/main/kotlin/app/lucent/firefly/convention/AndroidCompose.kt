@@ -27,6 +27,7 @@ internal fun Project.configureAndroidCompose(
             add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
             add("debugImplementation", libs.findLibrary("androidx-compose-ui-tooling").get())
             add("debugImplementation", libs.findLibrary("androidx-compose-ui-test-manifest").get())
+            add("lintChecks", libs.findLibrary("compose-lint-checks").get())
         }
     }
 

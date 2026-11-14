@@ -1,0 +1,25 @@
+name: Develop Integration
+
+on:
+  schedule:
+    - cron: '0 2 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  integration:
+    name: Full Integration Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Full Quality + Build
+        run: ./gradlew spotlessCheck lint test assembleDebug --no-daemon

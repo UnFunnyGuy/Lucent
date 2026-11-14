@@ -5,6 +5,11 @@ ksp = "2.3.13"
 koin = "4.2.2"
 koinCompiler = "1.2.3"
 
+# Quality & Formatting
+spotless = "7.0.2"
+ktlint = "1.5.0"
+composeLint = "1.4.2"
+
 # AndroidX Core & Lifecycle
 coreKtx = "1.15.0"
 lifecycle = "2.9.0"
@@ -137,6 +142,9 @@ turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
+# Quality & Formatting
+compose-lint-checks = { group = "com.slack.lint.compose", name = "compose-lint-checks", version.ref = "composeLint" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -144,6 +152,7 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 
 # Project Conventions
 lucent-android-application = { id = "lucent.android.application" }
