@@ -2,8 +2,12 @@ name: Develop Integration
 
 on:
   schedule:
-    - cron: '0 2 * * 1-5'
+    - cron: '0 2 * * 0'
   workflow_dispatch:
+
+concurrency:
+  group: develop-integration-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -15,8 +19,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          ref: develop
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -29,3 +31,17 @@ jobs:
 
       - name: Full Quality + Build
         run: ./gradlew spotlessCheck lint test assembleDebug
+
+      - name: Upload Lint Reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: develop-lint-reports
+          path: '**/build/reports/lint-results-*.html'
+
+      - name: Upload Test Reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: develop-test-reports
+          path: '**/build/reports/tests/'

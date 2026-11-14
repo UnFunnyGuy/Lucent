@@ -3,6 +3,16 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run build (skip GitHub Release creation)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -11,6 +21,8 @@ jobs:
   release:
     name: Signed Release Build
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -29,11 +41,18 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/keystore"
           echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/keystore/release.keystore"
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Full Quality Gate
         run: ./gradlew spotlessCheck lint test
+
+      - name: Upload Quality Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-failure-reports
+          path: |
+            **/build/reports/lint-results-*.html
+            **/build/reports/tests/
 
       - name: Build Release Binaries
         run: ./gradlew bundleRelease assembleRelease
@@ -44,10 +63,18 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
+      - name: Cleanup Keystore
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keystore"
+
       - name: Create GitHub Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') && !inputs.dry_run }}
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
           files: |
             app/build/outputs/bundle/release/*.aab
             app/build/outputs/apk/release/*.apk
+            app/build/outputs/mapping/release/mapping.txt
