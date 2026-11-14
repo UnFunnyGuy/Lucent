@@ -1,4 +1,4 @@
-package com.sarath.lucent
+package app.lucent.firefly
 
 import org.junit.Test
 
