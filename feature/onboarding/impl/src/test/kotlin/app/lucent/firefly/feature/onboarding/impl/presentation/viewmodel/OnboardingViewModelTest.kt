@@ -1,6 +1,7 @@
 package app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel
 
 import app.cash.turbine.test
+import app.lucent.firefly.core.common.base.asUiText
 import app.lucent.firefly.core.common.result.AppError
 import app.lucent.firefly.core.common.result.Result
 import app.lucent.firefly.data.auth.api.model.AuthSession
@@ -9,6 +10,7 @@ import app.lucent.firefly.data.auth.api.model.ServerConfig
 import app.lucent.firefly.data.auth.api.model.ServerInfo
 import app.lucent.firefly.data.auth.api.repository.AuthRepository
 import app.lucent.firefly.data.auth.api.usecase.AuthenticateUseCase
+import app.lucent.firefly.feature.onboarding.impl.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -127,7 +129,7 @@ class OnboardingViewModelTest {
         viewModel.onAction(OnboardingUiAction.Connect)
 
         val state = viewModel.uiState.value
-        assertEquals("Please enter a valid server URL.", state.errorMessage)
+        assertEquals(R.string.feature_onboarding_error_blank_url.asUiText(), state.errorMessage)
     }
 
     @Test
@@ -138,7 +140,7 @@ class OnboardingViewModelTest {
         viewModel.onAction(OnboardingUiAction.Connect)
 
         val state = viewModel.uiState.value
-        assertEquals("Please enter your Personal Access Token (PAT).", state.errorMessage)
+        assertEquals(R.string.feature_onboarding_error_blank_token.asUiText(), state.errorMessage)
     }
 
     @Test
@@ -153,6 +155,6 @@ class OnboardingViewModelTest {
 
             val state = viewModel.uiState.value
             assertFalse(state.isLoading)
-            assertTrue(state.errorMessage?.isNotBlank() == true)
+            assertTrue(state.errorMessage != null)
         }
 }

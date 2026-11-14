@@ -19,11 +19,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.lucent.firefly.core.designsystem.theme.LucentTheme
+import app.lucent.firefly.core.ui.R
 
 @Composable
 fun FinancialKeypad(
@@ -70,7 +72,7 @@ fun FinancialKeypad(
                         if (char == '⌫') {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Backspace,
-                                contentDescription = "Backspace",
+                                contentDescription = stringResource(R.string.core_ui_backspace),
                                 tint = LucentTheme.colors.onSurfaceVariant,
                             )
                         } else {

@@ -1,0 +1,12 @@
+<resources>
+    <string name="feature_onboarding_title">Willkommen bei Lucent</string>
+    <string name="feature_onboarding_subtitle">Mit Ihrem Firefly III-Server verbinden</string>
+    <string name="feature_onboarding_server_url_label">Server-URL</string>
+    <string name="feature_onboarding_server_url_placeholder">https://firefly.example.com</string>
+    <string name="feature_onboarding_allow_self_signed">Selbstsigniertem / Homelab-TLS-Zertifikat vertrauen</string>
+    <string name="feature_onboarding_token_label">Persönliches Zugriffstoken (PAT)</string>
+    <string name="feature_onboarding_token_placeholder">Firefly III-Token einfügen</string>
+    <string name="feature_onboarding_connect_button">Verbinden</string>
+    <string name="feature_onboarding_error_blank_url">Bitte geben Sie eine gültige Server-URL ein.</string>
+    <string name="feature_onboarding_error_blank_token">Bitte geben Sie Ihr persönliches Zugriffstoken (PAT) ein.</string>
+</resources>

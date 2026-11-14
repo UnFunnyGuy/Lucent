@@ -1,0 +1,12 @@
+<resources>
+    <string name="feature_onboarding_title">Bienvenue sur Lucent</string>
+    <string name="feature_onboarding_subtitle">Connectez-vous à votre serveur Firefly III</string>
+    <string name="feature_onboarding_server_url_label">URL du serveur</string>
+    <string name="feature_onboarding_server_url_placeholder">https://firefly.example.com</string>
+    <string name="feature_onboarding_allow_self_signed">Faire confiance au certificat TLS auto-signé / homelab</string>
+    <string name="feature_onboarding_token_label">Jeton d\'accès personnel (PAT)</string>
+    <string name="feature_onboarding_token_placeholder">Collez votre jeton Firefly III</string>
+    <string name="feature_onboarding_connect_button">Se connecter</string>
+    <string name="feature_onboarding_error_blank_url">Veuillez saisir une URL de serveur valide.</string>
+    <string name="feature_onboarding_error_blank_token">Veuillez saisir votre jeton d\'accès personnel (PAT).</string>
+</resources>

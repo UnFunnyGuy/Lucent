@@ -1,0 +1,22 @@
+<resources>
+    <string name="feature_capture_cd_close">Fermer</string>
+    <string name="feature_capture_title_new">Nouvelle transaction</string>
+    <string name="feature_capture_type_expense">Dépense</string>
+    <string name="feature_capture_type_income">Revenu</string>
+    <string name="feature_capture_type_transfer">Virement</string>
+    <string name="feature_capture_no_accounts">Aucun compte pour l\'instant. Ils apparaîtront ici après la première synchronisation.</string>
+    <string name="feature_capture_picker_from">De</string>
+    <string name="feature_capture_picker_to">Vers</string>
+    <string name="feature_capture_description_label">Description</string>
+    <string name="feature_capture_description_placeholder_expense">ex. Courses</string>
+    <string name="feature_capture_description_placeholder_income">ex. Salaire</string>
+    <string name="feature_capture_description_placeholder_transfer">ex. Virement vers épargne</string>
+    <string name="feature_capture_date_today">Aujourd\'hui</string>
+    <string name="feature_capture_date_yesterday">Hier</string>
+    <string name="feature_capture_date_pick">Choisir une date</string>
+    <string name="feature_capture_notes_label">Note</string>
+    <string name="feature_capture_action_add_note">Ajouter une note</string>
+    <string name="feature_capture_save_button">Enregistrer %1$s</string>
+    <string name="feature_capture_dialog_confirm">OK</string>
+    <string name="feature_capture_dialog_cancel">Annuler</string>
+</resources>
