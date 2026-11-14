@@ -9,7 +9,6 @@ import org.koin.core.annotation.KoinViewModel
 class OnboardingViewModel(
     private val authenticateUseCase: AuthenticateUseCase,
 ) : BaseViewModel<OnboardingUiState, OnboardingUiEvent, OnboardingUiAction>() {
-
     override fun initialState(): OnboardingUiState = OnboardingUiState()
 
     override fun onActionEvent(action: OnboardingUiAction) {
@@ -43,13 +42,14 @@ class OnboardingViewModel(
 
         viewmodelLaunch {
             update { copy(isLoading = true, errorMessage = null) }
-            val result = authenticateUseCase.perform(
-                AuthenticateUseCase.Params(
-                    baseUrl = url,
-                    token = token,
-                    allowSelfSignedCert = currentState.allowSelfSignedCert,
-                ),
-            )
+            val result =
+                authenticateUseCase.perform(
+                    AuthenticateUseCase.Params(
+                        baseUrl = url,
+                        token = token,
+                        allowSelfSignedCert = currentState.allowSelfSignedCert,
+                    ),
+                )
             when (result) {
                 is Result.Success -> {
                     update { copy(isLoading = false, errorMessage = null) }

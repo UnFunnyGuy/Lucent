@@ -11,7 +11,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class ThemeTest {
-
     @Test
     fun financialColorsAreDefined() {
         assertNotNull(LucentLightColors.income)

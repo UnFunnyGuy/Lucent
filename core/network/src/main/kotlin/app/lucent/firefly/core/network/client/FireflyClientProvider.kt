@@ -10,7 +10,6 @@ import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Singleton
 
 interface FireflyClientProvider {
-
     /** Client for the active session. Throws [MissingCredentialsException] when signed out. */
     suspend fun authenticated(): HttpClient
 
@@ -23,7 +22,6 @@ class DefaultFireflyClientProvider(
     private val credentialsProvider: ServerCredentialsProvider,
     private val json: Json,
 ) : FireflyClientProvider {
-
     private val mutex = Mutex()
     private var cached: Pair<ServerCredentials, HttpClient>? = null
 
@@ -39,7 +37,8 @@ class DefaultFireflyClientProvider(
         }
     }
 
-    override fun forServer(credentials: ServerCredentials): HttpClient = HttpClient(OkHttp) {
-        installFirefly(credentials, json, logBodies = BuildConfig.DEBUG)
-    }
+    override fun forServer(credentials: ServerCredentials): HttpClient =
+        HttpClient(OkHttp) {
+            installFirefly(credentials, json, logBodies = BuildConfig.DEBUG)
+        }
 }

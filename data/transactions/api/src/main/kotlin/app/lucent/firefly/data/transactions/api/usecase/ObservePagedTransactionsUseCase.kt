@@ -11,6 +11,5 @@ import org.koin.core.annotation.Factory
 class ObservePagedTransactionsUseCase(
     private val repository: TransactionRepository,
 ) : NoParamsUseCase<PagingData<Transaction>> {
-
     override fun performStreaming(): Flow<PagingData<Transaction>> = repository.pagedTransactions()
 }

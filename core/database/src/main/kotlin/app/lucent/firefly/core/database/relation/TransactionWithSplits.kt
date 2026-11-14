@@ -9,7 +9,7 @@ data class TransactionWithSplits(
     @Embedded val group: TransactionGroupEntity,
     @Relation(
         parentColumn = "localId",
-        entityColumn = "transactionGroupId"
+        entityColumn = "transactionGroupId",
     )
-    val splits: List<TransactionSplitEntity>
+    val splits: List<TransactionSplitEntity>,
 )

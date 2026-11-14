@@ -32,33 +32,34 @@ class PeriodicSyncWorker(
     private val syncMetadataDao: SyncMetadataDao,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : CoroutineWorker(appContext, workerParams) {
+    override suspend fun doWork(): WorkResult =
+        withContext(ioDispatcher) {
+            authRepository.activeSession.firstOrNull() ?: return@withContext WorkResult.success()
 
-    override suspend fun doWork(): WorkResult = withContext(ioDispatcher) {
-        authRepository.activeSession.firstOrNull() ?: return@withContext WorkResult.success()
+            // Push first so the pulled data and balances already include local changes.
+            val push = processor.drain()
+            if (push.authenticationFailed) return@withContext WorkResult.success()
 
-        // Push first so the pulled data and balances already include local changes.
-        val push = processor.drain()
-        if (push.authenticationFailed) return@withContext WorkResult.success()
+            val now = System.currentTimeMillis()
+            val lastDeep = syncMetadataDao.get()?.lastDeepSyncAt
+            val deep = lastDeep == null || now - lastDeep >= DEEP_RECONCILE_INTERVAL_MILLIS
 
-        val now = System.currentTimeMillis()
-        val lastDeep = syncMetadataDao.get()?.lastDeepSyncAt
-        val deep = lastDeep == null || now - lastDeep >= DEEP_RECONCILE_INTERVAL_MILLIS
+            val pulls =
+                listOf(
+                    accountRepository.refreshAccounts(),
+                    if (deep) {
+                        transactionReconciler.reconcileTransactions(monthsBack = DEEP_RECONCILE_MONTHS)
+                    } else {
+                        transactionReconciler.syncRecentTransactions()
+                    },
+                )
+            val pullFailed = pulls.any { it is Result.Error }
 
-        val pulls = listOf(
-            accountRepository.refreshAccounts(),
-            if (deep) {
-                transactionReconciler.reconcileTransactions(monthsBack = DEEP_RECONCILE_MONTHS)
-            } else {
-                transactionReconciler.syncRecentTransactions()
-            },
-        )
-        val pullFailed = pulls.any { it is Result.Error }
-
-        if (!push.shouldRetry && !pullFailed) {
-            syncMetadataDao.markSynced(at = now, deep = deep)
+            if (!push.shouldRetry && !pullFailed) {
+                syncMetadataDao.markSynced(at = now, deep = deep)
+            }
+            if (push.shouldRetry || pullFailed) WorkResult.retry() else WorkResult.success()
         }
-        if (push.shouldRetry || pullFailed) WorkResult.retry() else WorkResult.success()
-    }
 
     private companion object {
         val DEEP_RECONCILE_INTERVAL_MILLIS = TimeUnit.DAYS.toMillis(7)

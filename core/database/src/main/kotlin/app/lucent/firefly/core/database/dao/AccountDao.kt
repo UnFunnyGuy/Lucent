@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AccountDao {
-
     @Query("SELECT * FROM accounts ORDER BY `order` ASC, name ASC")
     fun observeAccounts(): Flow<List<AccountEntity>>
 

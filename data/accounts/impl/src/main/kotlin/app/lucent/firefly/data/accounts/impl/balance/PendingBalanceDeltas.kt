@@ -18,26 +18,32 @@ internal fun computePendingDeltas(
 ): Map<String, BigDecimal> {
     if (unsyncedSplits.isEmpty()) return emptyMap()
 
-    val accountsByRef = buildMap {
-        for (account in accounts) {
-            put(account.localId, account)
-            account.serverId?.let { put(it, account) }
+    val accountsByRef =
+        buildMap {
+            for (account in accounts) {
+                put(account.localId, account)
+                account.serverId?.let { put(it, account) }
+            }
         }
-    }
     val deltas = mutableMapOf<String, BigDecimal>()
 
-    fun apply(accountRef: String?, split: TransactionSplitEntity, signed: BigDecimal) {
+    fun apply(
+        accountRef: String?,
+        split: TransactionSplitEntity,
+        signed: BigDecimal,
+    ) {
         val account = accountRef?.let { accountsByRef[it] } ?: return
         if (!account.currencyCode.equals(split.currencyCode, ignoreCase = true)) return
         deltas[account.localId] = (deltas[account.localId] ?: BigDecimal.ZERO) + signed
     }
 
     for (split in unsyncedSplits) {
-        val direction = when (split.syncStatus) {
-            SyncStatus.PENDING_CREATE -> BigDecimal.ONE
-            SyncStatus.PENDING_DELETE -> if (split.serverSplitId != null) BigDecimal.ONE.negate() else continue
-            else -> continue
-        }
+        val direction =
+            when (split.syncStatus) {
+                SyncStatus.PENDING_CREATE -> BigDecimal.ONE
+                SyncStatus.PENDING_DELETE -> if (split.serverSplitId != null) BigDecimal.ONE.negate() else continue
+                else -> continue
+            }
         val amount = split.amount.toBigDecimalOrNull()?.abs() ?: continue
         val moved = amount * direction
         apply(split.sourceId, split, moved.negate())

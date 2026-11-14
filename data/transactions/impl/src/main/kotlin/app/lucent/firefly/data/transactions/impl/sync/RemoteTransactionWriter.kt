@@ -16,7 +16,6 @@ class RemoteTransactionWriter(
     private val transactionDao: TransactionDao,
     private val syncQueueDao: SyncQueueDao,
 ) {
-
     /**
      * Upserts [dto], reusing the local ids of a group already linked to it (by server id, or by the
      * `external_id` it was created with). A group with unsynced local changes is left alone unless
@@ -24,34 +23,50 @@ class RemoteTransactionWriter(
      *
      * @return the local id of the group.
      */
-    suspend fun upsert(dto: TransactionReadDto, overwriteLocalChanges: Boolean = false): String {
-        val externalIds = dto.attributes.transactions.mapNotNull { it.externalId }.toSet()
-        val existing = transactionDao.getGroupByServerId(dto.id)?.localId
-            ?.let { transactionDao.getTransactionWithSplits(it) }
-            ?: externalIds.firstNotNullOfOrNull { transactionDao.getTransactionWithSplits(it) }
+    suspend fun upsert(
+        dto: TransactionReadDto,
+        overwriteLocalChanges: Boolean = false,
+    ): String {
+        val externalIds =
+            dto.attributes.transactions
+                .mapNotNull { it.externalId }
+                .toSet()
+        val existing =
+            transactionDao
+                .getGroupByServerId(dto.id)
+                ?.localId
+                ?.let { transactionDao.getTransactionWithSplits(it) }
+                ?: externalIds.firstNotNullOfOrNull { transactionDao.getTransactionWithSplits(it) }
 
         val serverUpdatedAt = parseIsoInstant(dto.attributes.updatedAt)
         if (existing != null && !overwriteLocalChanges) {
-            val hasLocalChanges = existing.splits.any { it.syncStatus != SyncStatus.SYNCED } ||
-                syncQueueDao.getForEntity(SyncEntityType.TRANSACTION, existing.group.localId)
-                    .isNotEmpty()
-            val unchanged = existing.group.serverId == dto.id &&
-                existing.group.updatedAt == serverUpdatedAt &&
-                existing.splits.size == dto.attributes.transactions.size
+            val hasLocalChanges =
+                existing.splits.any { it.syncStatus != SyncStatus.SYNCED } ||
+                    syncQueueDao
+                        .getForEntity(SyncEntityType.TRANSACTION, existing.group.localId)
+                        .isNotEmpty()
+            val unchanged =
+                existing.group.serverId == dto.id &&
+                    existing.group.updatedAt == serverUpdatedAt &&
+                    existing.splits.size == dto.attributes.transactions.size
             if (hasLocalChanges || unchanged) return existing.group.localId
         }
 
         val groupEntity = dto.toGroupEntity(existingLocalId = existing?.group?.localId)
-        val localSplitIdsByServerId = existing?.splits
-            ?.mapNotNull { split -> split.serverSplitId?.let { it to split.localSplitId } }
-            ?.toMap()
-            .orEmpty()
-        val splitEntities = dto.attributes.transactions.mapIndexed { index, splitDto ->
-            splitDto.toSplitEntity(
-                groupId = groupEntity.localId,
-                existingLocalId = splitDto.transactionJournalId?.let { localSplitIdsByServerId[it] },
-            ).copy(order = index)
-        }
+        val localSplitIdsByServerId =
+            existing
+                ?.splits
+                ?.mapNotNull { split -> split.serverSplitId?.let { it to split.localSplitId } }
+                ?.toMap()
+                .orEmpty()
+        val splitEntities =
+            dto.attributes.transactions.mapIndexed { index, splitDto ->
+                splitDto
+                    .toSplitEntity(
+                        groupId = groupEntity.localId,
+                        existingLocalId = splitDto.transactionJournalId?.let { localSplitIdsByServerId[it] },
+                    ).copy(order = index)
+            }
 
         if (existing != null) {
             transactionDao.deleteSplitsByGroupId(existing.group.localId)

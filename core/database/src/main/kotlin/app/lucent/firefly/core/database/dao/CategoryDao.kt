@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CategoryDao {
-
     @Query("SELECT * FROM categories ORDER BY name ASC")
     fun observeCategories(): Flow<List<CategoryEntity>>
 

@@ -26,7 +26,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UIContentStateTest {
-
     @Test
     fun successStatePropertiesAndAccessors() {
         val state: UIContentState<String> = UIContentState.Success("accounts")
@@ -104,7 +103,8 @@ class UIContentStateTest {
         var loadingTriggered = false
         var noneTriggered = false
 
-        UIContentState.Success("loaded")
+        UIContentState
+            .Success("loaded")
             .onSuccess { successData = it }
             .onError { errorMessage = (it as? UiText.DynamicString)?.value }
             .onLoading { loadingTriggered = true }
@@ -123,21 +123,23 @@ class UIContentStateTest {
     @Test
     fun foldHandlesAllBranches() {
         val success: UIContentState<Int> = UIContentState.Success(42)
-        val foldedSuccess = success.fold(
-            onSuccess = { "Value: $it" },
-            onError = { "Error: ${(it as UiText.DynamicString).value}" },
-            onLoading = { "Loading" },
-            onNone = { "None" },
-        )
+        val foldedSuccess =
+            success.fold(
+                onSuccess = { "Value: $it" },
+                onError = { "Error: ${(it as UiText.DynamicString).value}" },
+                onLoading = { "Loading" },
+                onNone = { "None" },
+            )
         assertEquals("Value: 42", foldedSuccess)
 
         val loading: UIContentState<Int> = UIContentState.Loading
-        val foldedLoading = loading.fold(
-            onSuccess = { "Value: $it" },
-            onError = { "Error" },
-            onLoading = { "Loading" },
-            onNone = { "None" },
-        )
+        val foldedLoading =
+            loading.fold(
+                onSuccess = { "Value: $it" },
+                onError = { "Error" },
+                onLoading = { "Loading" },
+                onNone = { "None" },
+            )
         assertEquals("Loading", foldedLoading)
     }
 
@@ -159,28 +161,31 @@ class UIContentStateTest {
     }
 
     @Test
-    fun flowAsUIContentStateEmitsLoadingThenSuccess() = runTest {
-        val flow = flowOf("item")
+    fun flowAsUIContentStateEmitsLoadingThenSuccess() =
+        runTest {
+            val flow = flowOf("item")
 
-        flow.asUIContentState().test {
-            assertEquals(UIContentState.Loading, awaitItem())
-            assertEquals(UIContentState.Success("item"), awaitItem())
-            awaitComplete()
+            flow.asUIContentState().test {
+                assertEquals(UIContentState.Loading, awaitItem())
+                assertEquals(UIContentState.Success("item"), awaitItem())
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun flowAsUIContentStateEmitsLoadingThenError() = runTest {
-        val flow = flow<String> {
-            throw RuntimeException("Network down")
-        }
+    fun flowAsUIContentStateEmitsLoadingThenError() =
+        runTest {
+            val flow =
+                flow<String> {
+                    throw RuntimeException("Network down")
+                }
 
-        flow.asUIContentState().test {
-            assertEquals(UIContentState.Loading, awaitItem())
-            val error = awaitItem()
-            assertTrue(error is UIContentState.Error)
-            assertEquals("Network down", ((error as UIContentState.Error).message as UiText.DynamicString).value)
-            awaitComplete()
+            flow.asUIContentState().test {
+                assertEquals(UIContentState.Loading, awaitItem())
+                val error = awaitItem()
+                assertTrue(error is UIContentState.Error)
+                assertEquals("Network down", ((error as UIContentState.Error).message as UiText.DynamicString).value)
+                awaitComplete()
+            }
         }
-    }
 }

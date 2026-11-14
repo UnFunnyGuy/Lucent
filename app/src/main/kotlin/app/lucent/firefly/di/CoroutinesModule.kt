@@ -12,7 +12,6 @@ import org.koin.core.annotation.Singleton
 
 @Module
 class CoroutinesModule {
-
     @Singleton
     @IoDispatcher
     fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO

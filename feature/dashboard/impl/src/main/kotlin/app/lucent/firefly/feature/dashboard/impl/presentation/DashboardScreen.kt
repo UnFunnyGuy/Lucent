@@ -97,9 +97,9 @@ import app.lucent.firefly.feature.dashboard.impl.presentation.viewmodel.Dashboar
 import app.lucent.firefly.feature.dashboard.impl.presentation.viewmodel.DashboardViewModel
 import app.lucent.firefly.feature.dashboard.impl.presentation.viewmodel.TransactionListItem
 import kotlinx.coroutines.flow.flowOf
+import org.koin.compose.viewmodel.koinViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun DashboardRoute(
@@ -178,9 +178,10 @@ fun DashboardScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = refresh,
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
+            modifier =
+                Modifier
+                    .padding(padding)
+                    .fillMaxSize(),
         ) {
             DashboardContent(
                 state = state,
@@ -261,19 +262,24 @@ private fun DashboardTopBar(
 
 /** One glanceable icon for the sync state; tapping it syncs now. */
 @Composable
-private fun SyncStatusButton(state: DashboardUiState, onClick: () -> Unit) {
+private fun SyncStatusButton(
+    state: DashboardUiState,
+    onClick: () -> Unit,
+) {
     IconButton(onClick = onClick) {
         when {
             state.isSyncing -> CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-            state.requiresReauthentication || state.failedChanges.isNotEmpty() -> Icon(
-                Icons.Default.ErrorOutline,
-                contentDescription = "Sync needs attention",
-                tint = LucentTheme.colors.error,
-            )
+            state.requiresReauthentication || state.failedChanges.isNotEmpty() ->
+                Icon(
+                    Icons.Default.ErrorOutline,
+                    contentDescription = "Sync needs attention",
+                    tint = LucentTheme.colors.error,
+                )
             !state.isOnline -> Icon(Icons.Default.CloudOff, contentDescription = "Offline")
-            state.pendingChangesCount > 0 -> BadgedBox(badge = { Badge { Text("${state.pendingChangesCount}") } }) {
-                Icon(Icons.Default.CloudUpload, contentDescription = "${state.pendingChangesCount} changes waiting to upload")
-            }
+            state.pendingChangesCount > 0 ->
+                BadgedBox(badge = { Badge { Text("${state.pendingChangesCount}") } }) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = "${state.pendingChangesCount} changes waiting to upload")
+                }
             else -> Icon(Icons.Default.CloudDone, contentDescription = "Synced")
         }
     }
@@ -333,10 +339,11 @@ private fun DashboardContent(
         ) { index ->
             when (val item = transactions[index]) {
                 is TransactionListItem.DayHeader -> DayHeader(item.date)
-                is TransactionListItem.Entry -> TransactionRow(
-                    transaction = item.transaction,
-                    onClick = { onAction(DashboardUiAction.OpenTransaction(item.transaction.id)) },
-                )
+                is TransactionListItem.Entry ->
+                    TransactionRow(
+                        transaction = item.transaction,
+                        onClick = { onAction(DashboardUiAction.OpenTransaction(item.transaction.id)) },
+                    )
                 null -> Spacer(modifier = Modifier.height(64.dp))
             }
         }
@@ -344,15 +351,18 @@ private fun DashboardContent(
         val loadState = transactions.loadState
         when {
             loadState.append is LoadState.Loading -> item(key = "append-loading") { LoadingRow() }
-            loadState.append is LoadState.Error -> item(key = "append-error") {
-                RetryRow(message = "Couldn't load older transactions", onRetry = transactions::retry)
-            }
-            transactions.itemCount == 0 && loadState.refresh is LoadState.Error -> item(key = "refresh-error") {
-                RetryRow(message = "Couldn't load transactions", onRetry = transactions::retry)
-            }
-            transactions.itemCount == 0 && loadState.refresh is LoadState.NotLoading -> item(key = "empty") {
-                EmptyTransactions(onAdd = { onAction(DashboardUiAction.OpenQuickAdd) })
-            }
+            loadState.append is LoadState.Error ->
+                item(key = "append-error") {
+                    RetryRow(message = "Couldn't load older transactions", onRetry = transactions::retry)
+                }
+            transactions.itemCount == 0 && loadState.refresh is LoadState.Error ->
+                item(key = "refresh-error") {
+                    RetryRow(message = "Couldn't load transactions", onRetry = transactions::retry)
+                }
+            transactions.itemCount == 0 && loadState.refresh is LoadState.NotLoading ->
+                item(key = "empty") {
+                    EmptyTransactions(onAdd = { onAction(DashboardUiAction.OpenQuickAdd) })
+                }
         }
     }
 }
@@ -450,7 +460,10 @@ private fun AccountsSection(
 }
 
 @Composable
-private fun AccountCard(account: Account, onClick: () -> Unit) {
+private fun AccountCard(
+    account: Account,
+    onClick: () -> Unit,
+) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
@@ -490,7 +503,10 @@ private fun AccountCard(account: Account, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+private fun SectionTitle(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
@@ -502,12 +518,13 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun DayHeader(date: LocalDate) {
     val today = LocalDate.now()
-    val label = when {
-        date == today -> "Today"
-        date == today.minusDays(1) -> "Yesterday"
-        date.year == today.year -> date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))
-        else -> date.format(DateTimeFormatter.ofPattern("d MMMM yyyy"))
-    }
+    val label =
+        when {
+            date == today -> "Today"
+            date == today.minusDays(1) -> "Yesterday"
+            date.year == today.year -> date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))
+            else -> date.format(DateTimeFormatter.ofPattern("d MMMM yyyy"))
+        }
     Text(
         text = label,
         style = MaterialTheme.typography.labelLarge,
@@ -517,20 +534,25 @@ private fun DayHeader(date: LocalDate) {
 }
 
 @Composable
-private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
+private fun TransactionRow(
+    transaction: Transaction,
+    onClick: () -> Unit,
+) {
     val split = transaction.splits.firstOrNull() ?: return
     val color = split.type.color()
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(color.copy(alpha = 0.12f), CircleShape),
+            modifier =
+                Modifier
+                    .size(40.dp)
+                    .background(color.copy(alpha = 0.12f), CircleShape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(split.type.icon(), contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
@@ -578,9 +600,10 @@ private fun TransactionRow(transaction: Transaction, onClick: () -> Unit) {
 @Composable
 private fun NoticeBanner(text: String) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
         shape = RoundedCornerShape(16.dp),
         color = LucentTheme.colors.error.copy(alpha = 0.12f),
     ) {
@@ -599,9 +622,10 @@ private fun NeedsAttentionCard(
     onAction: (DashboardUiAction) -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
         shape = RoundedCornerShape(16.dp),
         color = LucentTheme.colors.error.copy(alpha = 0.08f),
     ) {
@@ -639,9 +663,10 @@ private fun NeedsAttentionCard(
 @Composable
 private fun LoadingRow() {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -649,11 +674,15 @@ private fun LoadingRow() {
 }
 
 @Composable
-private fun RetryRow(message: String, onRetry: () -> Unit) {
+private fun RetryRow(
+    message: String,
+    onRetry: () -> Unit,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -665,9 +694,10 @@ private fun RetryRow(message: String, onRetry: () -> Unit) {
 @Composable
 private fun EmptyTransactions(onAdd: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 40.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
@@ -701,92 +731,101 @@ private fun TransactionSplit.route(): String {
 /** Expenses are shown negative, income positive, transfers unsigned. Mixed-currency splits use the first currency. */
 private fun Transaction.signedAmount(): Money {
     val first = splits.first()
-    val total = splits
-        .filter { it.amount.currency.code == first.amount.currency.code }
-        .fold(Money.zero(first.amount.currency)) { sum, split -> Money(sum.amount + split.amount.amount.abs(), sum.currency) }
+    val total =
+        splits
+            .filter { it.amount.currency.code == first.amount.currency.code }
+            .fold(Money.zero(first.amount.currency)) { sum, split -> Money(sum.amount + split.amount.amount.abs(), sum.currency) }
     return if (first.type == TransactionType.WITHDRAWAL) Money(total.amount.negate(), total.currency) else total
 }
 
 @Composable
-private fun TransactionType.color(): Color = when (this) {
-    TransactionType.DEPOSIT -> LucentTheme.colors.income
-    TransactionType.WITHDRAWAL -> LucentTheme.colors.expense
-    else -> LucentTheme.colors.transfer
-}
+private fun TransactionType.color(): Color =
+    when (this) {
+        TransactionType.DEPOSIT -> LucentTheme.colors.income
+        TransactionType.WITHDRAWAL -> LucentTheme.colors.expense
+        else -> LucentTheme.colors.transfer
+    }
 
-private fun TransactionType.icon(): ImageVector = when (this) {
-    TransactionType.DEPOSIT -> Icons.Default.ArrowDownward
-    TransactionType.WITHDRAWAL -> Icons.Default.ArrowUpward
-    else -> Icons.Default.SwapHoriz
-}
+private fun TransactionType.icon(): ImageVector =
+    when (this) {
+        TransactionType.DEPOSIT -> Icons.Default.ArrowDownward
+        TransactionType.WITHDRAWAL -> Icons.Default.ArrowUpward
+        else -> Icons.Default.SwapHoriz
+    }
 
-private fun SyncOperation.describe(): String = when (this) {
-    SyncOperation.CREATE -> "A new transaction"
-    SyncOperation.UPDATE -> "An edit"
-    SyncOperation.DELETE -> "A deletion"
-}
+private fun SyncOperation.describe(): String =
+    when (this) {
+        SyncOperation.CREATE -> "A new transaction"
+        SyncOperation.UPDATE -> "An edit"
+        SyncOperation.DELETE -> "A deletion"
+    }
 
 @Preview(showBackground = true, heightDp = 900)
 @Composable
 private fun DashboardScreenPreview() {
     val eur = Currency(code = "EUR", symbol = "€")
-    val checking = Account(
-        id = "1",
-        serverId = "1",
-        name = "Checking",
-        type = AccountType.ASSET,
-        balance = Money.of("1240.00", eur),
-        pendingDelta = Money.of("-14.50", eur),
-        currency = eur,
-        active = true,
-        order = 0,
-        updatedAt = 0L,
-    )
-    val coffee = Transaction(
-        id = "t1",
-        serverId = null,
-        title = null,
-        splits = listOf(
-            TransactionSplit(
-                splitId = "s1",
-                serverSplitId = null,
-                groupId = "t1",
-                type = TransactionType.WITHDRAWAL,
-                date = System.currentTimeMillis(),
-                amount = Money.of("14.50", eur),
-                description = "Coffee",
-                sourceId = "1",
-                sourceName = "Checking",
-                destinationId = null,
-                destinationName = null,
-                categoryId = null,
-                categoryName = null,
-                budgetId = null,
-                budgetName = null,
-                notes = null,
-                tags = emptyList(),
-                isPendingSync = true,
+    val checking =
+        Account(
+            id = "1",
+            serverId = "1",
+            name = "Checking",
+            type = AccountType.ASSET,
+            balance = Money.of("1240.00", eur),
+            pendingDelta = Money.of("-14.50", eur),
+            currency = eur,
+            active = true,
+            order = 0,
+            updatedAt = 0L,
+        )
+    val coffee =
+        Transaction(
+            id = "t1",
+            serverId = null,
+            title = null,
+            splits =
+                listOf(
+                    TransactionSplit(
+                        splitId = "s1",
+                        serverSplitId = null,
+                        groupId = "t1",
+                        type = TransactionType.WITHDRAWAL,
+                        date = System.currentTimeMillis(),
+                        amount = Money.of("14.50", eur),
+                        description = "Coffee",
+                        sourceId = "1",
+                        sourceName = "Checking",
+                        destinationId = null,
+                        destinationName = null,
+                        categoryId = null,
+                        categoryName = null,
+                        budgetId = null,
+                        budgetName = null,
+                        notes = null,
+                        tags = emptyList(),
+                        isPendingSync = true,
+                    ),
+                ),
+            createdAt = 0L,
+            updatedAt = 0L,
+        )
+    val items =
+        flowOf(
+            PagingData.from(
+                listOf(TransactionListItem.DayHeader(LocalDate.now()), TransactionListItem.Entry(coffee)),
             ),
-        ),
-        createdAt = 0L,
-        updatedAt = 0L,
-    )
-    val items = flowOf(
-        PagingData.from(
-            listOf(TransactionListItem.DayHeader(LocalDate.now()), TransactionListItem.Entry(coffee)),
-        ),
-    ).collectAsLazyPagingItems()
+        ).collectAsLazyPagingItems()
 
     LucentTheme {
         DashboardScreen(
-            state = DashboardUiState(
-                serverHost = "firefly.home.lan",
-                netWorth = Money.of("12450.80", eur),
-                monthIncome = Money.of("3200.00", eur),
-                monthSpending = Money.of("1180.25", eur),
-                accounts = listOf(checking),
-                pendingChangesCount = 1,
-            ),
+            state =
+                DashboardUiState(
+                    serverHost = "firefly.home.lan",
+                    netWorth = Money.of("12450.80", eur),
+                    monthIncome = Money.of("3200.00", eur),
+                    monthSpending = Money.of("1180.25", eur),
+                    accounts = listOf(checking),
+                    pendingChangesCount = 1,
+                ),
             transactions = items,
             onAction = {},
         )

@@ -5,9 +5,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class NavigatorTest {
-
     private object Login : NavKey
+
     private object Home : NavKey
+
     private object Detail : NavKey
 
     private object AuthGraph : NavGraph {

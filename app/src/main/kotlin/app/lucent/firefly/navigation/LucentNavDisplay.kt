@@ -24,13 +24,15 @@ fun LucentNavDisplay(
         backStack = navigator.backStack,
         modifier = modifier,
         onBack = navigator::goBack,
-        entryDecorators = listOf(
-            rememberSaveableStateHolderNavEntryDecorator<NavKey>(),
-            rememberViewModelStoreNavEntryDecorator<NavKey>(),
-        ),
+        entryDecorators =
+            listOf(
+                rememberSaveableStateHolderNavEntryDecorator(),
+                rememberViewModelStoreNavEntryDecorator(),
+            ),
         sceneStrategies = listOf(bottomSheetStrategy),
-        entryProvider = entryProvider {
-            entryProviderInstallers.forEach { installer -> installer.install(this) }
-        },
+        entryProvider =
+            entryProvider {
+                entryProviderInstallers.forEach { installer -> installer.install(this) }
+            },
     )
 }

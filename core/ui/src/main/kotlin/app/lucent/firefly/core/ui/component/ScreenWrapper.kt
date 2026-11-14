@@ -72,13 +72,14 @@ fun ScreenWrapper(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Scaffold(
-        modifier = modifier.then(
-            if (applySystemBarsPadding) {
-                Modifier.windowInsetsPadding(contentWindowInsets)
-            } else {
-                Modifier
-            }
-        ),
+        modifier =
+            modifier.then(
+                if (applySystemBarsPadding) {
+                    Modifier.windowInsetsPadding(contentWindowInsets)
+                } else {
+                    Modifier
+                },
+            ),
         topBar = { topBar?.invoke() },
         bottomBar = { bottomBar?.invoke() },
         snackbarHost = {
@@ -91,24 +92,23 @@ fun ScreenWrapper(
         contentWindowInsets = contentWindowInsets,
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (applySystemBarsPadding) {
-                        Modifier
-                            .padding(
-                                top = innerPadding.calculateTopPadding(),
-                                start = LucentTheme.dimensions.paddingMedium,
-                                end = LucentTheme.dimensions.paddingMedium,
-                                bottom = innerPadding.calculateBottomPadding(),
-                            )
-                            .padding(vertical = LucentTheme.dimensions.paddingMedium)
-                    } else {
-                        Modifier
-                    }
-                )
-                .then(if (applyImePadding) Modifier.imePadding() else Modifier)
-                .then(if (scrollable) Modifier.verticalScroll(scrollState) else Modifier),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (applySystemBarsPadding) {
+                            Modifier
+                                .padding(
+                                    top = innerPadding.calculateTopPadding(),
+                                    start = LucentTheme.dimensions.paddingMedium,
+                                    end = LucentTheme.dimensions.paddingMedium,
+                                    bottom = innerPadding.calculateBottomPadding(),
+                                ).padding(vertical = LucentTheme.dimensions.paddingMedium)
+                        } else {
+                            Modifier
+                        },
+                    ).then(if (applyImePadding) Modifier.imePadding() else Modifier)
+                    .then(if (scrollable) Modifier.verticalScroll(scrollState) else Modifier),
             verticalArrangement = verticalArrangement,
             horizontalAlignment = horizontalAlignment,
             content = content,

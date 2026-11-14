@@ -7,7 +7,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class NetWorthTest {
-
     private val eur = Currency(code = "EUR", symbol = "€")
     private val usd = Currency(code = "USD", symbol = "$")
 
@@ -38,50 +37,54 @@ class NetWorthTest {
 
     @Test
     fun sumsAssetsAndNegativeLiabilitiesIncludingPendingChanges() {
-        val result = calculateNetWorth(
-            listOf(
-                account("checking", "1000.00", pendingDelta = "-50.00"),
-                account("loan", "-300.00", type = AccountType.LIABILITY),
-            ),
-        )
+        val result =
+            calculateNetWorth(
+                listOf(
+                    account("checking", "1000.00", pendingDelta = "-50.00"),
+                    account("loan", "-300.00", type = AccountType.LIABILITY),
+                ),
+            )
 
         assertEquals(Money.of("650.00", eur), result)
     }
 
     @Test
     fun skipsExcludedInactiveAndCounterpartyAccounts() {
-        val result = calculateNetWorth(
-            listOf(
-                account("checking", "100.00"),
-                account("hidden", "999.00", includeInNetWorth = false),
-                account("closed", "999.00", active = false),
-                account("groceries", "999.00", type = AccountType.EXPENSE),
-            ),
-        )
+        val result =
+            calculateNetWorth(
+                listOf(
+                    account("checking", "100.00"),
+                    account("hidden", "999.00", includeInNetWorth = false),
+                    account("closed", "999.00", active = false),
+                    account("groceries", "999.00", type = AccountType.EXPENSE),
+                ),
+            )
 
         assertEquals(Money.of("100.00", eur), result)
     }
 
     @Test
     fun convertsForeignAccountsWithPrimaryCurrencyBalance() {
-        val result = calculateNetWorth(
-            listOf(
-                account("checking", "100.00"),
-                account("us-broker", "200.00", currency = usd, primaryBalance = "180.00"),
-            ),
-        )
+        val result =
+            calculateNetWorth(
+                listOf(
+                    account("checking", "100.00"),
+                    account("us-broker", "200.00", currency = usd, primaryBalance = "180.00"),
+                ),
+            )
 
         assertEquals(Money.of("280.00", eur), result)
     }
 
     @Test
     fun leavesOutForeignAccountsWithoutConversion() {
-        val result = calculateNetWorth(
-            listOf(
-                account("checking", "100.00"),
-                account("us-broker", "200.00", currency = usd),
-            ),
-        )
+        val result =
+            calculateNetWorth(
+                listOf(
+                    account("checking", "100.00"),
+                    account("us-broker", "200.00", currency = usd),
+                ),
+            )
 
         assertEquals(Money.of("100.00", eur), result)
     }

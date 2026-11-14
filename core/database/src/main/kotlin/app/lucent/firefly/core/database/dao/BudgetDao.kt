@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface BudgetDao {
-
     @Query("SELECT * FROM budgets WHERE active = 1 ORDER BY name ASC")
     fun observeActiveBudgets(): Flow<List<BudgetEntity>>
 

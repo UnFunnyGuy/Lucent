@@ -28,36 +28,38 @@ class SyncQueueWorker(
     private val syncMetadataDao: SyncMetadataDao,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : CoroutineWorker(appContext, workerParams) {
+    override suspend fun doWork(): WorkResult =
+        withContext(ioDispatcher) {
+            authRepository.activeSession.firstOrNull() ?: return@withContext WorkResult.success()
 
-    override suspend fun doWork(): WorkResult = withContext(ioDispatcher) {
-        authRepository.activeSession.firstOrNull() ?: return@withContext WorkResult.success()
-
-        val result = processor.drain()
-        if (result.pushedAny) {
-            // Server balances only change once pushed mutations land; refresh so pending deltas
-            // are not dropped against a stale balance.
-            accountRepository.refreshAccounts()
+            val result = processor.drain()
+            if (result.pushedAny) {
+                // Server balances only change once pushed mutations land; refresh so pending deltas
+                // are not dropped against a stale balance.
+                accountRepository.refreshAccounts()
+            }
+            if (!result.shouldRetry && !result.authenticationFailed) {
+                syncMetadataDao.markSynced(at = System.currentTimeMillis(), deep = false)
+            }
+            if (result.shouldRetry) WorkResult.retry() else WorkResult.success()
         }
-        if (!result.shouldRetry && !result.authenticationFailed) {
-            syncMetadataDao.markSynced(at = System.currentTimeMillis(), deep = false)
-        }
-        if (result.shouldRetry) WorkResult.retry() else WorkResult.success()
-    }
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notificationManager =
             applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationManager.getNotificationChannel(CHANNEL_ID) == null) {
             notificationManager.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Sync", NotificationManager.IMPORTANCE_MIN)
+                NotificationChannel(CHANNEL_ID, "Sync", NotificationManager.IMPORTANCE_MIN),
             )
         }
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("Syncing transactions")
-            .setOngoing(true)
-            .setSilent(true)
-            .build()
+        val notification =
+            NotificationCompat
+                .Builder(applicationContext, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle("Syncing transactions")
+                .setOngoing(true)
+                .setSilent(true)
+                .build()
         return ForegroundInfo(NOTIFICATION_ID, notification)
     }
 

@@ -18,7 +18,10 @@ interface LucentPreferencesDataSource {
     suspend fun clearToken()
 
     suspend fun updateThemeMode(themeMode: ThemeMode)
+
     suspend fun setDynamicColor(enabled: Boolean)
+
     suspend fun setBiometricEnabled(enabled: Boolean)
+
     suspend fun clearAll()
 }

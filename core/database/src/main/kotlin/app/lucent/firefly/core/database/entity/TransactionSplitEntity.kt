@@ -22,7 +22,7 @@ import app.lucent.firefly.core.database.model.SyncStatus
         Index(value = ["sourceId"]),
         Index(value = ["destinationId"]),
         Index(value = ["syncStatus"]),
-    ]
+    ],
 )
 data class TransactionSplitEntity(
     @PrimaryKey val localSplitId: String,

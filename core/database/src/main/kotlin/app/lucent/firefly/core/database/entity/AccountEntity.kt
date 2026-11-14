@@ -11,7 +11,7 @@ import app.lucent.firefly.core.database.model.SyncStatus
     indices = [
         Index(value = ["serverId"], unique = true),
         Index(value = ["type", "active"]),
-    ]
+    ],
 )
 data class AccountEntity(
     @PrimaryKey val localId: String,

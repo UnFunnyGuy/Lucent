@@ -20,7 +20,6 @@ data class Dimensions(
     val paddingXLarge: Dp = 32.dp,
     val paddingXxLarge: Dp = 48.dp,
     val paddingHuge: Dp = 64.dp,
-
     // ==== Corner Radii ====
     val radiusNone: Dp = 0.dp,
     val radiusXxSmall: Dp = 2.dp,
@@ -30,27 +29,23 @@ data class Dimensions(
     val radiusLarge: Dp = 16.dp,
     val radiusXLarge: Dp = 24.dp,
     val radiusFull: Dp = 999.dp,
-
     // ==== Borders & Outlines ====
     val borderHairline: Dp = 0.5.dp,
     val borderThin: Dp = 1.dp,
     val borderRegular: Dp = 2.dp,
     val borderThick: Dp = 4.dp,
-
     // ==== Elevations ====
     val elevationNone: Dp = 0.dp,
     val elevationSmall: Dp = 2.dp,
     val elevationMedium: Dp = 4.dp,
     val elevationLarge: Dp = 8.dp,
     val elevationXLarge: Dp = 16.dp,
-
     // ==== Icons ====
     val iconSmall: Dp = 16.dp,
     val iconMedium: Dp = 24.dp,
     val iconLarge: Dp = 32.dp,
     val iconXLarge: Dp = 40.dp,
     val iconHuge: Dp = 48.dp,
-
     // ==== Component Sizing ====
     val minTouchTarget: Dp = 48.dp,
     val buttonHeightSmall: Dp = 36.dp,

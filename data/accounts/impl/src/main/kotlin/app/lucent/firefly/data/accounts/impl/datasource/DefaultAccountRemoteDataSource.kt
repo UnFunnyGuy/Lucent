@@ -14,15 +14,19 @@ import org.koin.core.annotation.Singleton
 class DefaultAccountRemoteDataSource(
     private val clientProvider: FireflyClientProvider,
 ) : AccountRemoteDataSource {
-
-    override suspend fun getAccounts(type: String, page: Int): Result<AccountArrayDto> = safeApiCall {
-        clientProvider.authenticated().get(ApiVersion.V1("accounts")) {
-            parameter("type", type)
-            parameter("page", page)
+    override suspend fun getAccounts(
+        type: String,
+        page: Int,
+    ): Result<AccountArrayDto> =
+        safeApiCall {
+            clientProvider.authenticated().get(ApiVersion.V1("accounts")) {
+                parameter("type", type)
+                parameter("page", page)
+            }
         }
-    }
 
-    override suspend fun getAccount(accountId: String): Result<AccountSingleDto> = safeApiCall {
-        clientProvider.authenticated().get(ApiVersion.V1("accounts/$accountId"))
-    }
+    override suspend fun getAccount(accountId: String): Result<AccountSingleDto> =
+        safeApiCall {
+            clientProvider.authenticated().get(ApiVersion.V1("accounts/$accountId"))
+        }
 }

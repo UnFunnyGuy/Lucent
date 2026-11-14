@@ -18,49 +18,65 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SessionSyncInitializerTest {
-
     private class RecordingSyncManager : SyncManager {
         val calls = mutableListOf<String>()
         override val syncState: StateFlow<SyncState> = MutableStateFlow(SyncState())
-        override fun requestSync(expedited: Boolean) { calls += "request" }
-        override fun schedulePeriodicSync(intervalMinutes: Long) { calls += "schedule" }
-        override fun cancelSync() { calls += "cancel" }
-        override suspend fun retryFailedChange(id: Long, overwriteServer: Boolean) = Unit
+
+        override fun requestSync(expedited: Boolean) {
+            calls += "request"
+        }
+
+        override fun schedulePeriodicSync(intervalMinutes: Long) {
+            calls += "schedule"
+        }
+
+        override fun cancelSync() {
+            calls += "cancel"
+        }
+
+        override suspend fun retryFailedChange(
+            id: Long,
+            overwriteServer: Boolean,
+        ) = Unit
+
         override suspend fun discardFailedChange(id: Long): Result<Unit> = Result.Success(Unit)
     }
 
-    private val session = AuthSession(
-        serverConfig = ServerConfig("https://demo.firefly.org"),
-        user = AuthUser("2", "u@example.com", "owner"),
-        token = "pat",
-    )
+    private val session =
+        AuthSession(
+            serverConfig = ServerConfig("https://demo.firefly.org"),
+            user = AuthUser("2", "u@example.com", "owner"),
+            token = "pat",
+        )
 
     @Test
-    fun schedulesWhileSignedInAndCancelsOnSignOut() = runTest(UnconfinedTestDispatcher()) {
-        val sessionFlow = MutableStateFlow<AuthSession?>(session)
-        val authRepository = mockk<AuthRepository> { every { activeSession } returns sessionFlow }
-        val syncManager = RecordingSyncManager()
-        val statusStore = SyncStatusStore()
-        val initializer = SessionSyncInitializer(authRepository, syncManager, statusStore, backgroundScope)
+    fun schedulesWhileSignedInAndCancelsOnSignOut() =
+        runTest(UnconfinedTestDispatcher()) {
+            val sessionFlow = MutableStateFlow<AuthSession?>(session)
+            val authRepository = mockk<AuthRepository> { every { activeSession } returns sessionFlow }
+            val syncManager = RecordingSyncManager()
+            val statusStore = SyncStatusStore()
+            val initializer = SessionSyncInitializer(authRepository, syncManager, statusStore, backgroundScope)
 
-        initializer.initialize()
-        initializer.initialize()
-        sessionFlow.value = session.copy(user = session.user.copy(email = "renamed@example.com"))
-        sessionFlow.value = null
+            initializer.initialize()
+            initializer.initialize()
+            sessionFlow.value = session.copy(user = session.user.copy(email = "renamed@example.com"))
+            sessionFlow.value = null
 
-        assertEquals(listOf("schedule", "request", "cancel"), syncManager.calls)
-    }
+            assertEquals(listOf("schedule", "request", "cancel"), syncManager.calls)
+        }
 
     @Test
-    fun newTokenClearsTheReauthenticationFlag() = runTest(UnconfinedTestDispatcher()) {
-        val sessionFlow = MutableStateFlow<AuthSession?>(session)
-        val authRepository = mockk<AuthRepository> { every { activeSession } returns sessionFlow }
-        val statusStore = SyncStatusStore()
-        SessionSyncInitializer(authRepository, RecordingSyncManager(), statusStore, backgroundScope).initialize()
+    fun newTokenClearsTheReauthenticationFlag() =
+        runTest(UnconfinedTestDispatcher()) {
+            val sessionFlow = MutableStateFlow<AuthSession?>(session)
+            val authRepository = mockk<AuthRepository> { every { activeSession } returns sessionFlow }
+            val statusStore = SyncStatusStore()
+            SessionSyncInitializer(authRepository, RecordingSyncManager(), statusStore, backgroundScope).initialize()
 
-        statusStore.markReauthenticationRequired()
-        sessionFlow.value = session.copy(token = "new-token")
+            statusStore.markReauthenticationRequired()
+            sessionFlow.value = session.copy(token = "new-token")
 
-        assertEquals(false, statusStore.requiresReauthentication.value)
-    }
+            assertEquals(false, statusStore.requiresReauthentication.value)
+        }
 }

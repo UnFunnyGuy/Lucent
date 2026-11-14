@@ -36,7 +36,6 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CaptureViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
     private val eur = Currency(code = "EUR", symbol = "€")
     private val checking = account("acc-1", "1", "Checking", AccountType.ASSET, order = 1)
@@ -48,25 +47,39 @@ class CaptureViewModelTest {
     private var createdDraft: TransactionDraft? = null
     private var createResult: Result<String> = Result.Success("tx-1")
 
-    private val accountRepository = object : AccountRepository {
-        override fun observeAccounts(): Flow<List<Account>> = accountsFlow
-        override fun observeActiveAccounts(): Flow<List<Account>> = accountsFlow
-        override fun observeAccount(id: String): Flow<Account?> = flowOf(null)
-        override suspend fun getAccount(id: String): Result<Account> = Result.Error(AppError.Common("Not mocked"))
-        override suspend fun refreshAccounts(): Result<List<Account>> = Result.Success(emptyList())
-    }
+    private val accountRepository =
+        object : AccountRepository {
+            override fun observeAccounts(): Flow<List<Account>> = accountsFlow
 
-    private val transactionRepository = object : TransactionRepository {
-        override fun observeTransactions(): Flow<List<Transaction>> = flowOf(emptyList())
-        override fun pagedTransactions(): Flow<PagingData<Transaction>> = flowOf(PagingData.empty())
-        override suspend fun getTransaction(id: String): Result<Transaction> = Result.Error(AppError.Common("Not mocked"))
-        override suspend fun createTransaction(draft: TransactionDraft): Result<String> {
-            createdDraft = draft
-            return createResult
+            override fun observeActiveAccounts(): Flow<List<Account>> = accountsFlow
+
+            override fun observeAccount(id: String): Flow<Account?> = flowOf(null)
+
+            override suspend fun getAccount(id: String): Result<Account> = Result.Error(AppError.Common("Not mocked"))
+
+            override suspend fun refreshAccounts(): Result<List<Account>> = Result.Success(emptyList())
         }
-        override suspend fun updateTransaction(id: String, draft: TransactionDraft): Result<Unit> = Result.Success(Unit)
-        override suspend fun deleteTransaction(id: String): Result<Unit> = Result.Success(Unit)
-    }
+
+    private val transactionRepository =
+        object : TransactionRepository {
+            override fun observeTransactions(): Flow<List<Transaction>> = flowOf(emptyList())
+
+            override fun pagedTransactions(): Flow<PagingData<Transaction>> = flowOf(PagingData.empty())
+
+            override suspend fun getTransaction(id: String): Result<Transaction> = Result.Error(AppError.Common("Not mocked"))
+
+            override suspend fun createTransaction(draft: TransactionDraft): Result<String> {
+                createdDraft = draft
+                return createResult
+            }
+
+            override suspend fun updateTransaction(
+                id: String,
+                draft: TransactionDraft,
+            ): Result<Unit> = Result.Success(Unit)
+
+            override suspend fun deleteTransaction(id: String): Result<Unit> = Result.Success(Unit)
+        }
 
     @Before
     fun setUp() {
@@ -78,153 +91,177 @@ class CaptureViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel() = CaptureViewModel(
-        observeAccountsUseCase = ObserveAccountsUseCase(accountRepository),
-        createTransactionUseCase = CreateTransactionUseCase(transactionRepository),
-    )
+    private fun createViewModel() =
+        CaptureViewModel(
+            observeAccountsUseCase = ObserveAccountsUseCase(accountRepository),
+            createTransactionUseCase = CreateTransactionUseCase(transactionRepository),
+        )
 
     @Test
-    fun `keypad builds an amount with at most two decimals`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+    fun `keypad builds an amount with at most two decimals`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
 
-        "12.345".forEach { viewModel.onAction(CaptureUiAction.EnterDigit(it)) }
-        assertEquals("12.34", viewModel.uiState.value.amountInput)
+            "12.345".forEach { viewModel.onAction(CaptureUiAction.EnterDigit(it)) }
+            assertEquals("12.34", viewModel.uiState.value.amountInput)
 
-        viewModel.onAction(CaptureUiAction.DeleteDigit)
-        assertEquals("12.3", viewModel.uiState.value.amountInput)
+            viewModel.onAction(CaptureUiAction.DeleteDigit)
+            assertEquals("12.3", viewModel.uiState.value.amountInput)
 
-        viewModel.onAction(CaptureUiAction.ClearAmount)
-        assertEquals("0", viewModel.uiState.value.amountInput)
-    }
-
-    @Test
-    fun `expense defaults to the first own account and offers no counterparty`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(TransactionType.WITHDRAWAL, state.type)
-        assertEquals("acc-1", state.sourceAccountId)
-        assertNull(state.destinationAccountId)
-        assertFalse(state.needsDestination)
-        assertEquals(listOf("acc-1", "acc-2", "acc-3"), state.sourceOptions.map { it.id })
-    }
+            viewModel.onAction(CaptureUiAction.ClearAmount)
+            assertEquals("0", viewModel.uiState.value.amountInput)
+        }
 
     @Test
-    fun `switching to income keeps the chosen account as the receiving account`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
-        viewModel.onAction(CaptureUiAction.SelectSourceAccount("acc-2"))
+    fun `expense defaults to the first own account and offers no counterparty`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
 
-        viewModel.onAction(CaptureUiAction.SelectType(TransactionType.DEPOSIT))
-
-        val state = viewModel.uiState.value
-        assertNull(state.sourceAccountId)
-        assertEquals("acc-2", state.destinationAccountId)
-    }
-
-    @Test
-    fun `transfer uses two different asset accounts and swaps when they would collide`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
-
-        viewModel.onAction(CaptureUiAction.SelectType(TransactionType.TRANSFER))
-        assertEquals("acc-1", viewModel.uiState.value.sourceAccountId)
-        assertEquals("acc-2", viewModel.uiState.value.destinationAccountId)
-        assertEquals(listOf("acc-1", "acc-2"), viewModel.uiState.value.sourceOptions.map { it.id })
-
-        viewModel.onAction(CaptureUiAction.SelectSourceAccount("acc-2"))
-
-        assertEquals("acc-2", viewModel.uiState.value.sourceAccountId)
-        assertEquals("acc-1", viewModel.uiState.value.destinationAccountId)
-    }
+            val state = viewModel.uiState.value
+            assertEquals(TransactionType.WITHDRAWAL, state.type)
+            assertEquals("acc-1", state.sourceAccountId)
+            assertNull(state.destinationAccountId)
+            assertFalse(state.needsDestination)
+            assertEquals(listOf("acc-1", "acc-2", "acc-3"), state.sourceOptions.map { it.id })
+        }
 
     @Test
-    fun `save is disabled until amount and description are set`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+    fun `switching to income keeps the chosen account as the receiving account`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            viewModel.onAction(CaptureUiAction.SelectSourceAccount("acc-2"))
 
-        assertFalse(viewModel.uiState.value.canSave)
-        viewModel.onAction(CaptureUiAction.EnterDigit('5'))
-        assertFalse(viewModel.uiState.value.canSave)
-        viewModel.onAction(CaptureUiAction.UpdateDescription("Coffee"))
-        assertTrue(viewModel.uiState.value.canSave)
-    }
+            viewModel.onAction(CaptureUiAction.SelectType(TransactionType.DEPOSIT))
+
+            val state = viewModel.uiState.value
+            assertNull(state.sourceAccountId)
+            assertEquals("acc-2", state.destinationAccountId)
+        }
 
     @Test
-    fun `expense draft sends only the source account and dismisses`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+    fun `transfer uses two different asset accounts and swaps when they would collide`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
 
-        viewModel.uiEvent.test {
-            "25".forEach { viewModel.onAction(CaptureUiAction.EnterDigit(it)) }
-            viewModel.onAction(CaptureUiAction.UpdateDescription("  Dinner "))
+            viewModel.onAction(CaptureUiAction.SelectType(TransactionType.TRANSFER))
+            assertEquals("acc-1", viewModel.uiState.value.sourceAccountId)
+            assertEquals("acc-2", viewModel.uiState.value.destinationAccountId)
+            assertEquals(
+                listOf("acc-1", "acc-2"),
+                viewModel.uiState.value.sourceOptions
+                    .map { it.id },
+            )
+
+            viewModel.onAction(CaptureUiAction.SelectSourceAccount("acc-2"))
+
+            assertEquals("acc-2", viewModel.uiState.value.sourceAccountId)
+            assertEquals("acc-1", viewModel.uiState.value.destinationAccountId)
+        }
+
+    @Test
+    fun `save is disabled until amount and description are set`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.canSave)
+            viewModel.onAction(CaptureUiAction.EnterDigit('5'))
+            assertFalse(viewModel.uiState.value.canSave)
+            viewModel.onAction(CaptureUiAction.UpdateDescription("Coffee"))
+            assertTrue(viewModel.uiState.value.canSave)
+        }
+
+    @Test
+    fun `expense draft sends only the source account and dismisses`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.uiEvent.test {
+                "25".forEach { viewModel.onAction(CaptureUiAction.EnterDigit(it)) }
+                viewModel.onAction(CaptureUiAction.UpdateDescription("  Dinner "))
+                viewModel.onAction(CaptureUiAction.Save)
+                advanceUntilIdle()
+
+                assertEquals(CaptureUiEvent.Dismiss, awaitItem())
+            }
+            val draft = createdDraft!!
+            assertEquals(TransactionType.WITHDRAWAL, draft.type)
+            assertEquals("Dinner", draft.description)
+            assertEquals(Money.of("25", eur), draft.amount)
+            assertEquals("1", draft.sourceId)
+            assertNull(draft.destinationId)
+            assertNull(draft.destinationName)
+        }
+
+    @Test
+    fun `income draft sends only the destination account`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            viewModel.onAction(CaptureUiAction.SelectType(TransactionType.DEPOSIT))
+            viewModel.onAction(CaptureUiAction.EnterDigit('9'))
+            viewModel.onAction(CaptureUiAction.UpdateDescription("Salary"))
             viewModel.onAction(CaptureUiAction.Save)
             advanceUntilIdle()
 
-            assertEquals(CaptureUiEvent.Dismiss, awaitItem())
+            assertNull(createdDraft?.sourceId)
+            assertNull(createdDraft?.sourceName)
+            assertEquals("1", createdDraft?.destinationId)
         }
-        val draft = createdDraft!!
-        assertEquals(TransactionType.WITHDRAWAL, draft.type)
-        assertEquals("Dinner", draft.description)
-        assertEquals(Money.of("25", eur), draft.amount)
-        assertEquals("1", draft.sourceId)
-        assertNull(draft.destinationId)
-        assertNull(draft.destinationName)
-    }
 
     @Test
-    fun `income draft sends only the destination account`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+    fun `transfer draft sends both accounts and the chosen date`() =
+        runTest(testDispatcher) {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+            val lastWeek = LocalDate.now().minusDays(7)
 
-        viewModel.onAction(CaptureUiAction.SelectType(TransactionType.DEPOSIT))
-        viewModel.onAction(CaptureUiAction.EnterDigit('9'))
-        viewModel.onAction(CaptureUiAction.UpdateDescription("Salary"))
-        viewModel.onAction(CaptureUiAction.Save)
-        advanceUntilIdle()
+            viewModel.onAction(CaptureUiAction.SelectType(TransactionType.TRANSFER))
+            viewModel.onAction(CaptureUiAction.EnterDigit('3'))
+            viewModel.onAction(CaptureUiAction.UpdateDescription("Savings"))
+            viewModel.onAction(CaptureUiAction.SelectDate(lastWeek))
+            viewModel.onAction(CaptureUiAction.Save)
+            advanceUntilIdle()
 
-        assertNull(createdDraft?.sourceId)
-        assertNull(createdDraft?.sourceName)
-        assertEquals("1", createdDraft?.destinationId)
-    }
-
-    @Test
-    fun `transfer draft sends both accounts and the chosen date`() = runTest(testDispatcher) {
-        val viewModel = createViewModel()
-        advanceUntilIdle()
-        val lastWeek = LocalDate.now().minusDays(7)
-
-        viewModel.onAction(CaptureUiAction.SelectType(TransactionType.TRANSFER))
-        viewModel.onAction(CaptureUiAction.EnterDigit('3'))
-        viewModel.onAction(CaptureUiAction.UpdateDescription("Savings"))
-        viewModel.onAction(CaptureUiAction.SelectDate(lastWeek))
-        viewModel.onAction(CaptureUiAction.Save)
-        advanceUntilIdle()
-
-        assertEquals("1", createdDraft?.sourceId)
-        assertEquals("2", createdDraft?.destinationId)
-        val savedDay = java.time.Instant.ofEpochMilli(createdDraft!!.date).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-        assertEquals(lastWeek, savedDay)
-    }
+            assertEquals("1", createdDraft?.sourceId)
+            assertEquals("2", createdDraft?.destinationId)
+            val savedDay =
+                java.time.Instant
+                    .ofEpochMilli(createdDraft!!.date)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate()
+            assertEquals(lastWeek, savedDay)
+        }
 
     @Test
-    fun `failed save keeps the sheet open with the error`() = runTest(testDispatcher) {
-        createResult = Result.Error(AppError.Common("A description is required."))
-        val viewModel = createViewModel()
-        advanceUntilIdle()
+    fun `failed save keeps the sheet open with the error`() =
+        runTest(testDispatcher) {
+            createResult = Result.Error(AppError.Common("A description is required."))
+            val viewModel = createViewModel()
+            advanceUntilIdle()
 
-        viewModel.onAction(CaptureUiAction.EnterDigit('1'))
-        viewModel.onAction(CaptureUiAction.UpdateDescription("x"))
-        viewModel.onAction(CaptureUiAction.Save)
-        advanceUntilIdle()
+            viewModel.onAction(CaptureUiAction.EnterDigit('1'))
+            viewModel.onAction(CaptureUiAction.UpdateDescription("x"))
+            viewModel.onAction(CaptureUiAction.Save)
+            advanceUntilIdle()
 
-        assertEquals("A description is required.", viewModel.uiState.value.errorMessage)
-        assertFalse(viewModel.uiState.value.isSaving)
-    }
+            assertEquals("A description is required.", viewModel.uiState.value.errorMessage)
+            assertFalse(viewModel.uiState.value.isSaving)
+        }
 
-    private fun account(id: String, serverId: String, name: String, type: AccountType, order: Int) = Account(
+    private fun account(
+        id: String,
+        serverId: String,
+        name: String,
+        type: AccountType,
+        order: Int,
+    ) = Account(
         id = id,
         serverId = serverId,
         name = name,

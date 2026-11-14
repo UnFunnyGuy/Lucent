@@ -9,6 +9,5 @@ import org.koin.core.annotation.Factory
 class RefreshTransactionsUseCase(
     private val reconciler: TransactionReconciler,
 ) : NoParamsUseCase<Result<Unit>> {
-
     override suspend fun perform(): Result<Unit> = reconciler.syncRecentTransactions()
 }

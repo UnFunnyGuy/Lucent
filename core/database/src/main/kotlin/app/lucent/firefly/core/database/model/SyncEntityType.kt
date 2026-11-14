@@ -4,5 +4,5 @@ enum class SyncEntityType {
     TRANSACTION,
     ACCOUNT,
     CATEGORY,
-    BUDGET
+    BUDGET,
 }

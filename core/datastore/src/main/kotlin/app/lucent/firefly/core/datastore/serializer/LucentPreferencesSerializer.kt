@@ -20,11 +20,11 @@ import java.io.OutputStream
  * registered in [app.lucent.firefly.core.datastore.di.DataStoreModule].
  */
 object LucentPreferencesSerializer : Serializer<LucentPreferences> {
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
 
     override val defaultValue: LucentPreferences = LucentPreferences()
 
@@ -38,7 +38,10 @@ object LucentPreferencesSerializer : Serializer<LucentPreferences> {
         }
     }
 
-    override suspend fun writeTo(t: LucentPreferences, output: OutputStream) {
+    override suspend fun writeTo(
+        t: LucentPreferences,
+        output: OutputStream,
+    ) {
         output.write(
             json.encodeToString(t).encodeToByteArray(),
         )

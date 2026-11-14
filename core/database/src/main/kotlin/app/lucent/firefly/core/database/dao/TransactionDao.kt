@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TransactionDao {
-
     @Transaction
     @Query(
         """
@@ -29,7 +28,7 @@ interface TransactionDao {
             SELECT MAX(date) FROM transaction_splits
             WHERE transaction_splits.transactionGroupId = transaction_groups.localId
         ) DESC, createdAt DESC
-        """
+        """,
     )
     fun pagingSource(): PagingSource<Int, TransactionWithSplits>
 
@@ -46,7 +45,7 @@ interface TransactionDao {
             SELECT MAX(date) FROM transaction_splits
             WHERE transaction_splits.transactionGroupId = transaction_groups.localId
         ) DESC, createdAt DESC
-        """
+        """,
     )
     fun observeTransactions(): Flow<List<TransactionWithSplits>>
 
@@ -59,7 +58,7 @@ interface TransactionDao {
         WHERE (sourceId IN (:accountIds) OR destinationId IN (:accountIds))
         AND syncStatus != 'PENDING_DELETE'
         ORDER BY date DESC
-        """
+        """,
     )
     fun observeSplitsForAccount(accountIds: List<String>): Flow<List<TransactionSplitEntity>>
 
@@ -80,15 +79,28 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSplits(splits: List<TransactionSplitEntity>)
 
-    @Query("UPDATE transaction_splits SET serverSplitId = :serverSplitId, syncStatus = :status WHERE localSplitId = :localSplitId")
-    suspend fun updateSplitSyncStatus(localSplitId: String, serverSplitId: String?, status: SyncStatus)
+    @Query(
+        "UPDATE transaction_splits SET serverSplitId = :serverSplitId, syncStatus = :status WHERE localSplitId = :localSplitId",
+    )
+    suspend fun updateSplitSyncStatus(
+        localSplitId: String,
+        serverSplitId: String?,
+        status: SyncStatus,
+    )
 
     @Query("UPDATE transaction_groups SET serverId = :serverId WHERE localId = :localId")
-    suspend fun updateGroupServerId(localId: String, serverId: String?)
+    suspend fun updateGroupServerId(
+        localId: String,
+        serverId: String?,
+    )
 
     /** Records the server copy a local group now mirrors; [serverUpdatedAt] is the base for conflict checks. */
     @Query("UPDATE transaction_groups SET serverId = :serverId, updatedAt = :serverUpdatedAt WHERE localId = :localId")
-    suspend fun linkGroup(localId: String, serverId: String, serverUpdatedAt: Long)
+    suspend fun linkGroup(
+        localId: String,
+        serverId: String,
+        serverUpdatedAt: Long,
+    )
 
     @Transaction
     @Query(
@@ -98,9 +110,12 @@ interface TransactionDao {
             SELECT transactionGroupId FROM transaction_splits
             WHERE date BETWEEN :startMillis AND :endMillis
         )
-        """
+        """,
     )
-    suspend fun getGroupsInDateRange(startMillis: Long, endMillis: Long): List<TransactionWithSplits>
+    suspend fun getGroupsInDateRange(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<TransactionWithSplits>
 
     @Query("DELETE FROM transaction_groups WHERE localId = :localGroupId")
     suspend fun deleteGroup(localGroupId: String)
@@ -113,5 +128,4 @@ interface TransactionDao {
         deleteSplitsByGroupId(localGroupId)
         deleteGroup(localGroupId)
     }
-
 }

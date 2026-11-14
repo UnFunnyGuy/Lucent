@@ -10,7 +10,6 @@ import java.time.Clock
 @Configuration
 @ComponentScan("app.lucent.firefly.data.transactions.impl")
 class TransactionsModule {
-
     @Singleton
     fun provideClock(): Clock = Clock.systemDefaultZone()
 }

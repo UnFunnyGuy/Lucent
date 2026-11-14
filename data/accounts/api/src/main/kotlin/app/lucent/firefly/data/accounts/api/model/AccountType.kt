@@ -5,15 +5,17 @@ enum class AccountType {
     EXPENSE,
     REVENUE,
     LIABILITY,
-    OTHER;
+    OTHER,
+    ;
 
     companion object {
-        fun fromString(value: String): AccountType = when (value.lowercase()) {
-            "asset" -> ASSET
-            "expense" -> EXPENSE
-            "revenue" -> REVENUE
-            "liability", "liabilities" -> LIABILITY
-            else -> OTHER
-        }
+        fun fromString(value: String): AccountType =
+            when (value.lowercase()) {
+                "asset" -> ASSET
+                "expense" -> EXPENSE
+                "revenue" -> REVENUE
+                "liability", "liabilities" -> LIABILITY
+                else -> OTHER
+            }
     }
 }

@@ -22,9 +22,9 @@ import app.lucent.firefly.data.transactions.api.usecase.RefreshTransactionsUseCa
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import org.koin.core.annotation.KoinViewModel
 import java.net.URI
 import java.time.YearMonth
-import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class DashboardViewModel(
@@ -37,21 +37,21 @@ class DashboardViewModel(
     private val authRepository: AuthRepository,
     private val connectivityHandler: ConnectivityHandler,
 ) : BaseViewModel<DashboardUiState, DashboardUiEvent, DashboardUiAction>() {
-
     /**
      * Paged history, read from Room and paged in from the server while scrolling. Kept out of the
      * UI state because Paging owns its own loading state and must be collected by the list.
      */
     val transactions: Flow<PagingData<TransactionListItem>> =
-        observePagedTransactionsUseCase.performStreaming()
+        observePagedTransactionsUseCase
+            .performStreaming()
             .map { page ->
-                page.map { TransactionListItem.Entry(it) }
+                page
+                    .map { TransactionListItem.Entry(it) }
                     .insertSeparators<TransactionListItem.Entry, TransactionListItem> { before, after ->
                         val day = after?.date ?: return@insertSeparators null
                         if (before?.date == day) null else TransactionListItem.DayHeader(day)
                     }
-            }
-            .cachedIn(viewModelScope)
+            }.cachedIn(viewModelScope)
 
     override fun initialState(): DashboardUiState = DashboardUiState()
 
@@ -84,7 +84,16 @@ class DashboardViewModel(
     private fun observeSession() {
         viewmodelLaunch {
             authRepository.activeSession.collect { session ->
-                update { copy(serverHost = session?.serverConfig?.baseUrl?.let(::hostOf).orEmpty()) }
+                update {
+                    copy(
+                        serverHost =
+                            session
+                                ?.serverConfig
+                                ?.baseUrl
+                                ?.let(::hostOf)
+                                .orEmpty(),
+                    )
+                }
             }
         }
     }
@@ -138,8 +147,9 @@ class DashboardViewModel(
             update { copy(isRefreshing = true, errorMessage = null) }
             val accountsResult = refreshAccountsUseCase.perform()
             val transactionsResult = refreshTransactionsUseCase.perform()
-            val error = (accountsResult as? Result.Error)?.error?.errorMessage
-                ?: (transactionsResult as? Result.Error)?.error?.errorMessage
+            val error =
+                (accountsResult as? Result.Error)?.error?.errorMessage
+                    ?: (transactionsResult as? Result.Error)?.error?.errorMessage
             update { copy(isRefreshing = false, errorMessage = error) }
         }
     }
@@ -170,7 +180,10 @@ class DashboardViewModel(
     }
 
     /** Sum of one transaction type in the net-worth currency; other currencies are left out. */
-    private fun List<Transaction>.total(type: TransactionType, reference: Money): Money =
+    private fun List<Transaction>.total(
+        type: TransactionType,
+        reference: Money,
+    ): Money =
         flatMap { it.splits }
             .filter { it.type == type && it.amount.currency.code == reference.currency.code }
             .fold(Money.zero(reference.currency)) { sum, split -> Money(sum.amount + split.amount.amount.abs(), sum.currency) }

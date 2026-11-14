@@ -16,13 +16,22 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-data class TestState(val count: Int = 0) : UIState
+data class TestState(
+    val count: Int = 0,
+) : UIState
+
 sealed interface TestEvent : UIEvent {
-    data class Notification(val message: String) : TestEvent
+    data class Notification(
+        val message: String,
+    ) : TestEvent
 }
+
 sealed interface TestAction : UIAction {
     data object Increment : TestAction
-    data class SendMessage(val text: String) : TestAction
+
+    data class SendMessage(
+        val text: String,
+    ) : TestAction
 }
 
 class TestViewModel : BaseViewModel<TestState, TestEvent, TestAction>() {
@@ -38,7 +47,6 @@ class TestViewModel : BaseViewModel<TestState, TestEvent, TestAction>() {
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaseViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -65,15 +73,16 @@ class BaseViewModelTest {
     }
 
     @Test
-    fun testSendEvent() = runTest(testDispatcher) {
-        val viewModel = TestViewModel()
+    fun testSendEvent() =
+        runTest(testDispatcher) {
+            val viewModel = TestViewModel()
 
-        viewModel.uiEvent.test {
-            viewModel.onAction(TestAction.SendMessage("Hello World"))
-            testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.uiEvent.test {
+                viewModel.onAction(TestAction.SendMessage("Hello World"))
+                testDispatcher.scheduler.advanceUntilIdle()
 
-            val event = awaitItem()
-            assertEquals(TestEvent.Notification("Hello World"), event)
+                val event = awaitItem()
+                assertEquals(TestEvent.Notification("Hello World"), event)
+            }
         }
-    }
 }

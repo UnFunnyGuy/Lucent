@@ -37,8 +37,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.util.concurrent.TimeUnit
 import org.koin.core.annotation.Singleton
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -51,15 +51,15 @@ class WorkManagerSyncManager(
     private val statusStore: SyncStatusStore,
     private val handlers: List<SyncEntityHandler>,
 ) : SyncManager {
-
     private val workManager by lazy { WorkManager.getInstance(context) }
 
-    private val isRunning: Flow<Boolean> = combine(
-        workManager.getWorkInfosForUniqueWorkFlow(WORK_NAME_EXPEDITED_SYNC),
-        workManager.getWorkInfosForUniqueWorkFlow(WORK_NAME_PERIODIC_SYNC),
-    ) { queueWork, periodicWork ->
-        (queueWork + periodicWork).any { it.state == WorkInfo.State.RUNNING }
-    }
+    private val isRunning: Flow<Boolean> =
+        combine(
+            workManager.getWorkInfosForUniqueWorkFlow(WORK_NAME_EXPEDITED_SYNC),
+            workManager.getWorkInfosForUniqueWorkFlow(WORK_NAME_PERIODIC_SYNC),
+        ) { queueWork, periodicWork ->
+            (queueWork + periodicWork).any { it.state == WorkInfo.State.RUNNING }
+        }
 
     override val syncState: StateFlow<SyncState> =
         authRepository.activeSession
@@ -79,32 +79,33 @@ class WorkManagerSyncManager(
                         SyncState(
                             isSyncing = running,
                             pendingCount = pending,
-                            failedChanges = failed.map { entry ->
-                                FailedChange(
-                                    id = entry.id,
-                                    target = entry.entityType.toTargetType(),
-                                    operation = entry.action.toOperation(),
-                                    localId = entry.localEntityId,
-                                    message = entry.lastError.orEmpty(),
-                                    isConflict = entry.isConflict,
-                                )
-                            },
+                            failedChanges =
+                                failed.map { entry ->
+                                    FailedChange(
+                                        id = entry.id,
+                                        target = entry.entityType.toTargetType(),
+                                        operation = entry.action.toOperation(),
+                                        localId = entry.localEntityId,
+                                        message = entry.lastError.orEmpty(),
+                                        isConflict = entry.isConflict,
+                                    )
+                                },
                             lastSuccessfulSyncAt = metadata?.lastSuccessfulSyncAt,
                             requiresReauthentication = reauth,
                         )
                     }
                 }
-            }
-            .stateIn(
+            }.stateIn(
                 scope = scope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = SyncState(),
             )
 
     override fun requestSync(expedited: Boolean) {
-        val builder = OneTimeWorkRequestBuilder<SyncQueueWorker>()
-            .setConstraints(networkConstraints())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_DELAY_SECONDS, TimeUnit.SECONDS)
+        val builder =
+            OneTimeWorkRequestBuilder<SyncQueueWorker>()
+                .setConstraints(networkConstraints())
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_DELAY_SECONDS, TimeUnit.SECONDS)
 
         if (expedited) {
             builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -120,10 +121,11 @@ class WorkManagerSyncManager(
     }
 
     override fun schedulePeriodicSync(intervalMinutes: Long) {
-        val periodicRequest = PeriodicWorkRequestBuilder<PeriodicSyncWorker>(intervalMinutes, TimeUnit.MINUTES)
-            .setConstraints(networkConstraints())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_DELAY_SECONDS, TimeUnit.SECONDS)
-            .build()
+        val periodicRequest =
+            PeriodicWorkRequestBuilder<PeriodicSyncWorker>(intervalMinutes, TimeUnit.MINUTES)
+                .setConstraints(networkConstraints())
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BACKOFF_DELAY_SECONDS, TimeUnit.SECONDS)
+                .build()
 
         workManager.enqueueUniquePeriodicWork(
             WORK_NAME_PERIODIC_SYNC,
@@ -137,21 +139,27 @@ class WorkManagerSyncManager(
         workManager.cancelUniqueWork(WORK_NAME_PERIODIC_SYNC)
     }
 
-    override suspend fun retryFailedChange(id: Long, overwriteServer: Boolean) {
+    override suspend fun retryFailedChange(
+        id: Long,
+        overwriteServer: Boolean,
+    ) {
         if (overwriteServer) syncQueueDao.resetForOverwrite(id) else syncQueueDao.resetForRetry(id)
         requestSync(expedited = true)
     }
 
     override suspend fun discardFailedChange(id: Long): Result<Unit> {
         val entry = syncQueueDao.getById(id) ?: return Result.Success(Unit)
-        val handler = handlers.firstOrNull { it.targetType == entry.entityType.toTargetType() }
-            ?: return Result.Success(Unit).also { syncQueueDao.deleteById(id) }
+        val handler =
+            handlers.firstOrNull { it.targetType == entry.entityType.toTargetType() }
+                ?: return Result.Success(Unit).also { syncQueueDao.deleteById(id) }
         return handler.discard(entry.toEntry())
     }
 
-    private fun networkConstraints() = Constraints.Builder()
-        .setRequiredNetworkType(NetworkType.CONNECTED)
-        .build()
+    private fun networkConstraints() =
+        Constraints
+            .Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
 
     companion object {
         const val WORK_NAME_EXPEDITED_SYNC = "lucent_sync_queue"

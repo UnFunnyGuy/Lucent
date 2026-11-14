@@ -7,7 +7,6 @@ import org.junit.Test
 import java.util.Locale
 
 class MoneyFormatTest {
-
     private val eur = Currency(code = "EUR", symbol = "€")
 
     @Test
@@ -23,6 +22,9 @@ class MoneyFormatTest {
 
     @Test
     fun respectsCurrenciesWithoutDecimals() {
-        assertEquals("¥1,500", Money.of("1500", Currency(code = "JPY", symbol = "¥", decimalPlaces = 0)).formatAmount(locale = Locale.US))
+        assertEquals(
+            "¥1,500",
+            Money.of("1500", Currency(code = "JPY", symbol = "¥", decimalPlaces = 0)).formatAmount(locale = Locale.US),
+        )
     }
 }

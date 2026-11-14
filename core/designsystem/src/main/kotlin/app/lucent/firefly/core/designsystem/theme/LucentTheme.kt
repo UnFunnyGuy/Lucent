@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalContext
  * Accessor for Lucent design system tokens.
  */
 object LucentTheme {
-
     val colors: LucentColors
         @Composable
         @ReadOnlyComposable
@@ -44,12 +43,13 @@ fun LucentTheme(
     val context = LocalContext.current
     val supportsDynamic = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-    val materialColorScheme = when {
-        supportsDynamic && darkTheme -> dynamicDarkColorScheme(context)
-        supportsDynamic && !darkTheme -> dynamicLightColorScheme(context)
-        darkTheme -> LucentMaterialDarkColorScheme
-        else -> LucentMaterialLightColorScheme
-    }
+    val materialColorScheme =
+        when {
+            supportsDynamic && darkTheme -> dynamicDarkColorScheme(context)
+            supportsDynamic && !darkTheme -> dynamicLightColorScheme(context)
+            darkTheme -> LucentMaterialDarkColorScheme
+            else -> LucentMaterialLightColorScheme
+        }
 
     val customColors = if (darkTheme) LucentDarkColors else LucentLightColors
 

@@ -21,16 +21,17 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class SyncQueueDaoTest {
-
     private lateinit var database: LucentDatabase
     private lateinit var syncQueueDao: SyncQueueDao
 
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            Room
+                .inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
         syncQueueDao = database.syncQueueDao()
     }
 
@@ -40,90 +41,97 @@ class SyncQueueDaoTest {
     }
 
     @Test
-    fun getPendingQueueReturnsEnqueueOrderEvenWithIdenticalTimestamps() = runTest {
-        syncQueueDao.enqueue(createQueueEntry(localId = "uuid-1", createdAt = 1000L))
-        syncQueueDao.enqueue(createQueueEntry(localId = "uuid-2", createdAt = 1000L))
-        syncQueueDao.enqueue(createQueueEntry(localId = "uuid-3", createdAt = 500L))
+    fun getPendingQueueReturnsEnqueueOrderEvenWithIdenticalTimestamps() =
+        runTest {
+            syncQueueDao.enqueue(createQueueEntry(localId = "uuid-1", createdAt = 1000L))
+            syncQueueDao.enqueue(createQueueEntry(localId = "uuid-2", createdAt = 1000L))
+            syncQueueDao.enqueue(createQueueEntry(localId = "uuid-3", createdAt = 500L))
 
-        val queue = syncQueueDao.getPendingQueue()
+            val queue = syncQueueDao.getPendingQueue()
 
-        assertEquals(listOf("uuid-1", "uuid-2", "uuid-3"), queue.map { it.localEntityId })
-    }
-
-    @Test
-    fun attemptIsCountedBeforeTheErrorIsRecorded() = runTest {
-        val id = syncQueueDao.enqueue(createQueueEntry(localId = "uuid-1"))
-
-        syncQueueDao.markAttemptStarted(id)
-        syncQueueDao.recordError(id, "TIMEOUT")
-
-        val entry = syncQueueDao.getPendingQueue().single()
-        assertEquals(1, entry.attemptCount)
-        assertEquals("TIMEOUT", entry.lastError)
-    }
-
-    @Test
-    fun updateAfterCreateIsMergedIntoTheCreate() = runTest {
-        syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.CREATE, null)
-
-        val result = syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.UPDATE, null)
-
-        assertEquals(EnqueueResult.MERGED, result)
-        assertEquals(listOf(SyncAction.CREATE), syncQueueDao.getPendingQueue().map { it.action })
-    }
-
-    @Test
-    fun deleteAfterCreateCancelsBoth() = runTest {
-        syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.CREATE, null)
-
-        val result = syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.DELETE, null)
-
-        assertEquals(EnqueueResult.CANCELLED_CREATE, result)
-        assertTrue(syncQueueDao.getPendingQueue().isEmpty())
-    }
-
-    @Test
-    fun deleteAfterUpdateReplacesItAndKeepsTheFirstBaseVersion() = runTest {
-        syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 10L)
-        syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 20L)
-
-        syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.DELETE, 30L)
-
-        val queued = syncQueueDao.getPendingQueue().single()
-        assertEquals(SyncAction.DELETE, queued.action)
-        assertEquals(10L, queued.baseUpdatedAt)
-    }
-
-    @Test
-    fun editingAFailedChangePutsItBackInTheQueue() = runTest {
-        syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 10L)
-        val id = syncQueueDao.getPendingQueue().single().id
-        syncQueueDao.markFailed(id, "Rejected", isConflict = false)
-        assertTrue(syncQueueDao.getPendingQueue().isEmpty())
-
-        syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 10L)
-
-        val queued = syncQueueDao.getPendingQueue().single()
-        assertEquals(SyncQueueStatus.PENDING, queued.status)
-        assertEquals(null, queued.lastError)
-    }
-
-    @Test
-    fun countPendingEmitsReactiveUpdates() = runTest {
-        syncQueueDao.countPending().test {
-            assertEquals(0, awaitItem())
-
-            val id = syncQueueDao.enqueue(createQueueEntry(localId = "uuid-1"))
-            assertEquals(1, awaitItem())
-
-            syncQueueDao.deleteById(id)
-            assertEquals(0, awaitItem())
+            assertEquals(listOf("uuid-1", "uuid-2", "uuid-3"), queue.map { it.localEntityId })
         }
-    }
+
+    @Test
+    fun attemptIsCountedBeforeTheErrorIsRecorded() =
+        runTest {
+            val id = syncQueueDao.enqueue(createQueueEntry(localId = "uuid-1"))
+
+            syncQueueDao.markAttemptStarted(id)
+            syncQueueDao.recordError(id, "TIMEOUT")
+
+            val entry = syncQueueDao.getPendingQueue().single()
+            assertEquals(1, entry.attemptCount)
+            assertEquals("TIMEOUT", entry.lastError)
+        }
+
+    @Test
+    fun updateAfterCreateIsMergedIntoTheCreate() =
+        runTest {
+            syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.CREATE, null)
+
+            val result = syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.UPDATE, null)
+
+            assertEquals(EnqueueResult.MERGED, result)
+            assertEquals(listOf(SyncAction.CREATE), syncQueueDao.getPendingQueue().map { it.action })
+        }
+
+    @Test
+    fun deleteAfterCreateCancelsBoth() =
+        runTest {
+            syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.CREATE, null)
+
+            val result = syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", null, SyncAction.DELETE, null)
+
+            assertEquals(EnqueueResult.CANCELLED_CREATE, result)
+            assertTrue(syncQueueDao.getPendingQueue().isEmpty())
+        }
+
+    @Test
+    fun deleteAfterUpdateReplacesItAndKeepsTheFirstBaseVersion() =
+        runTest {
+            syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 10L)
+            syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 20L)
+
+            syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.DELETE, 30L)
+
+            val queued = syncQueueDao.getPendingQueue().single()
+            assertEquals(SyncAction.DELETE, queued.action)
+            assertEquals(10L, queued.baseUpdatedAt)
+        }
+
+    @Test
+    fun editingAFailedChangePutsItBackInTheQueue() =
+        runTest {
+            syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 10L)
+            val id = syncQueueDao.getPendingQueue().single().id
+            syncQueueDao.markFailed(id, "Rejected", isConflict = false)
+            assertTrue(syncQueueDao.getPendingQueue().isEmpty())
+
+            syncQueueDao.enqueueChange(SyncEntityType.TRANSACTION, "tx", "srv", SyncAction.UPDATE, 10L)
+
+            val queued = syncQueueDao.getPendingQueue().single()
+            assertEquals(SyncQueueStatus.PENDING, queued.status)
+            assertEquals(null, queued.lastError)
+        }
+
+    @Test
+    fun countPendingEmitsReactiveUpdates() =
+        runTest {
+            syncQueueDao.countPending().test {
+                assertEquals(0, awaitItem())
+
+                val id = syncQueueDao.enqueue(createQueueEntry(localId = "uuid-1"))
+                assertEquals(1, awaitItem())
+
+                syncQueueDao.deleteById(id)
+                assertEquals(0, awaitItem())
+            }
+        }
 
     private fun createQueueEntry(
         localId: String,
-        createdAt: Long = System.currentTimeMillis()
+        createdAt: Long = System.currentTimeMillis(),
     ) = SyncQueueEntity(
         id = 0,
         entityType = SyncEntityType.TRANSACTION,
@@ -132,6 +140,6 @@ class SyncQueueDaoTest {
         serverEntityId = null,
         attemptCount = 0,
         lastError = null,
-        createdAt = createdAt
+        createdAt = createdAt,
     )
 }

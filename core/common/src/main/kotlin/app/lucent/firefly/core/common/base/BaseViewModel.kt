@@ -25,7 +25,6 @@ import kotlin.coroutines.EmptyCoroutineContext
  * @param Action User intents/actions.
  */
 abstract class BaseViewModel<State : UIState, Event : UIEvent, Action : UIAction> : ViewModel() {
-
     abstract fun initialState(): State
 
     protected abstract fun onActionEvent(action: Action)
@@ -39,15 +38,19 @@ abstract class BaseViewModel<State : UIState, Event : UIEvent, Action : UIAction
     protected val currentState: State
         get() = uiState.value
 
-    val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
-        onException(context, throwable)
-    }
+    val exceptionHandler =
+        CoroutineExceptionHandler { context, throwable ->
+            onException(context, throwable)
+        }
 
     protected fun update(reducer: State.() -> State) {
         _uiState.update(reducer)
     }
 
-    protected fun sendEvent(event: Event, delayMillis: Long? = null) {
+    protected fun sendEvent(
+        event: Event,
+        delayMillis: Long? = null,
+    ) {
         viewModelScope.launch {
             if (delayMillis != null && delayMillis > 0) {
                 delay(delayMillis)
@@ -64,13 +67,15 @@ abstract class BaseViewModel<State : UIState, Event : UIEvent, Action : UIAction
         context: CoroutineContext = EmptyCoroutineContext,
         start: CoroutineStart = CoroutineStart.DEFAULT,
         block: suspend CoroutineScope.() -> Unit,
-    ): Job {
-        return viewModelScope.launch(
+    ): Job =
+        viewModelScope.launch(
             context = context + exceptionHandler,
             start = start,
             block = block,
         )
-    }
 
-    open fun onException(coroutineContext: CoroutineContext, throwable: Throwable) = Unit
+    open fun onException(
+        coroutineContext: CoroutineContext,
+        throwable: Throwable,
+    ) = Unit
 }

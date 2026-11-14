@@ -24,7 +24,6 @@ internal data class BottomSheetScene<T : Any>(
     private val config: BottomSheetConfig,
     private val onBack: () -> Unit,
 ) : OverlayScene<T> {
-
     override val entries: List<NavEntry<T>> = listOf(entry)
 
     private lateinit var sheetState: SheetState
@@ -54,7 +53,6 @@ internal data class BottomSheetConfig(
 /** Shows the top entry in a [ModalBottomSheet] when it was declared with [bottomSheet] metadata. */
 @OptIn(ExperimentalMaterial3Api::class)
 class BottomSheetSceneStrategy<T : Any> : SceneStrategy<T> {
-
     override fun SceneStrategyScope<T>.calculateScene(entries: List<NavEntry<T>>): Scene<T>? {
         val lastEntry = entries.lastOrNull() ?: return null
         val config = lastEntry.metadata[BottomSheetKey] ?: return null

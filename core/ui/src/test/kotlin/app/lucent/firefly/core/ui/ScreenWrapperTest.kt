@@ -6,7 +6,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 
 class ScreenWrapperTest {
-
     @Test
     fun screenWrapperDefaultsAreConsistent() {
         assertNotNull(DefaultDimensions.paddingMedium)

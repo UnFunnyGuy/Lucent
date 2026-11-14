@@ -14,13 +14,11 @@ import org.koin.core.annotation.Factory
 class ValidateServerUseCase(
     private val authRepository: AuthRepository,
 ) : BaseUseCase<ValidateServerUseCase.Params, Result<ServerInfo>> {
-
     data class Params(
         val baseUrl: String,
         val token: String? = null,
         val allowSelfSignedCert: Boolean = false,
     )
 
-    override suspend fun perform(params: Params): Result<ServerInfo> =
-        authRepository.validateServer(params.baseUrl, params.token, params.allowSelfSignedCert)
+    override suspend fun perform(params: Params): Result<ServerInfo> = authRepository.validateServer(params.baseUrl, params.token, params.allowSelfSignedCert)
 }

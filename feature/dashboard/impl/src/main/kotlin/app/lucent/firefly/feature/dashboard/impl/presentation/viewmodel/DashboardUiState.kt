@@ -22,7 +22,6 @@ data class DashboardUiState(
     val logoutConfirmationPendingCount: Int? = null,
     val errorMessage: String? = null,
 ) : UIState {
-
     private companion object {
         val DEFAULT_CURRENCY = Currency(code = "EUR", symbol = "€")
     }

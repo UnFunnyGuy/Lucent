@@ -5,15 +5,17 @@ enum class TransactionType {
     DEPOSIT,
     TRANSFER,
     RECONCILIATION,
-    OTHER;
+    OTHER,
+    ;
 
     companion object {
-        fun fromString(value: String): TransactionType = when (value.lowercase()) {
-            "withdrawal" -> WITHDRAWAL
-            "deposit" -> DEPOSIT
-            "transfer" -> TRANSFER
-            "reconciliation" -> RECONCILIATION
-            else -> OTHER
-        }
+        fun fromString(value: String): TransactionType =
+            when (value.lowercase()) {
+                "withdrawal" -> WITHDRAWAL
+                "deposit" -> DEPOSIT
+                "transfer" -> TRANSFER
+                "reconciliation" -> RECONCILIATION
+                else -> OTHER
+            }
     }
 }

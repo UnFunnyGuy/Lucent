@@ -9,7 +9,6 @@ import org.koin.core.annotation.Factory
 class RequestSyncUseCase(
     private val syncManager: SyncManager,
 ) : BaseUseCase<Boolean, Result<Unit>> {
-
     override suspend fun perform(params: Boolean): Result<Unit> {
         syncManager.requestSync(expedited = params)
         return Result.Success(Unit)

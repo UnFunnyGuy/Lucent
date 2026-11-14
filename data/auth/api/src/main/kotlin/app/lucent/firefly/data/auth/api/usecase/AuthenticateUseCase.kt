@@ -14,7 +14,6 @@ import org.koin.core.annotation.Factory
 class AuthenticateUseCase(
     private val authRepository: AuthRepository,
 ) : BaseUseCase<AuthenticateUseCase.Params, Result<AuthSession>> {
-
     data class Params(
         val baseUrl: String,
         val token: String,

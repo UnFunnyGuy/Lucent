@@ -16,23 +16,24 @@ class DefaultAuthLocalDataSource(
     private val preferencesDataSource: LucentPreferencesDataSource,
     private val crypto: Crypto,
 ) : AuthLocalDataSource {
-
     override val activeSession: Flow<AuthSession?> =
         preferencesDataSource.connection.map { connection ->
             if (connection == null || connection.encryptedPat.isBlank()) return@map null
             val token = runCatching { crypto.decryptString(connection.encryptedPat) }.getOrDefault("")
             if (token.isBlank()) return@map null
             AuthSession(
-                serverConfig = ServerConfig(
-                    baseUrl = connection.baseUrl,
-                    apiVersion = connection.apiVersion,
-                    allowSelfSignedCert = connection.allowSelfSignedCert,
-                ),
-                user = AuthUser(
-                    id = connection.userId.orEmpty(),
-                    email = connection.userEmail.orEmpty(),
-                    role = connection.userRole ?: "user",
-                ),
+                serverConfig =
+                    ServerConfig(
+                        baseUrl = connection.baseUrl,
+                        apiVersion = connection.apiVersion,
+                        allowSelfSignedCert = connection.allowSelfSignedCert,
+                    ),
+                user =
+                    AuthUser(
+                        id = connection.userId.orEmpty(),
+                        email = connection.userEmail.orEmpty(),
+                        role = connection.userRole ?: "user",
+                    ),
                 token = token,
             )
         }
@@ -55,7 +56,10 @@ class DefaultAuthLocalDataSource(
         )
     }
 
-    override suspend fun isCurrentAccount(baseUrl: String, userId: String): Boolean {
+    override suspend fun isCurrentAccount(
+        baseUrl: String,
+        userId: String,
+    ): Boolean {
         val connection = preferencesDataSource.connection.first() ?: return false
         return connection.baseUrl == baseUrl && connection.userId == userId
     }

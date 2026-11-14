@@ -9,66 +9,74 @@ import org.junit.Test
 import java.math.BigDecimal
 
 class PendingBalanceDeltasTest {
-
     private val checking = account(localId = "local-checking", serverId = "1")
     private val savings = account(localId = "local-savings", serverId = "2")
 
     @Test
     fun pendingWithdrawalReducesSourceAccount() {
-        val deltas = computePendingDeltas(
-            listOf(checking),
-            listOf(split(SyncStatus.PENDING_CREATE, amount = "14.50", sourceId = "1", destinationId = null)),
-        )
+        val deltas =
+            computePendingDeltas(
+                listOf(checking),
+                listOf(split(SyncStatus.PENDING_CREATE, amount = "14.50", sourceId = "1", destinationId = null)),
+            )
         assertEquals(BigDecimal("-14.50"), deltas["local-checking"])
     }
 
     @Test
     fun pendingDepositIncreasesDestinationAccount() {
-        val deltas = computePendingDeltas(
-            listOf(checking),
-            listOf(split(SyncStatus.PENDING_CREATE, amount = "100.00", sourceId = null, destinationId = "1")),
-        )
+        val deltas =
+            computePendingDeltas(
+                listOf(checking),
+                listOf(split(SyncStatus.PENDING_CREATE, amount = "100.00", sourceId = null, destinationId = "1")),
+            )
         assertEquals(BigDecimal("100.00"), deltas["local-checking"])
     }
 
     @Test
     fun pendingTransferMovesBetweenAccounts() {
-        val deltas = computePendingDeltas(
-            listOf(checking, savings),
-            listOf(split(SyncStatus.PENDING_CREATE, amount = "50.00", sourceId = "1", destinationId = "2")),
-        )
+        val deltas =
+            computePendingDeltas(
+                listOf(checking, savings),
+                listOf(split(SyncStatus.PENDING_CREATE, amount = "50.00", sourceId = "1", destinationId = "2")),
+            )
         assertEquals(BigDecimal("-50.00"), deltas["local-checking"])
         assertEquals(BigDecimal("50.00"), deltas["local-savings"])
     }
 
     @Test
     fun pendingDeleteOfServerTransactionReversesIt() {
-        val deltas = computePendingDeltas(
-            listOf(checking),
-            listOf(split(SyncStatus.PENDING_DELETE, amount = "20.00", sourceId = "1", destinationId = null, serverSplitId = "j-1")),
-        )
+        val deltas =
+            computePendingDeltas(
+                listOf(checking),
+                listOf(split(SyncStatus.PENDING_DELETE, amount = "20.00", sourceId = "1", destinationId = null, serverSplitId = "j-1")),
+            )
         assertEquals(BigDecimal("20.00"), deltas["local-checking"])
     }
 
     @Test
     fun matchesAccountsByLocalIdWhenServerIdUnknown() {
-        val deltas = computePendingDeltas(
-            listOf(checking),
-            listOf(split(SyncStatus.PENDING_CREATE, amount = "3.00", sourceId = "local-checking", destinationId = null)),
-        )
+        val deltas =
+            computePendingDeltas(
+                listOf(checking),
+                listOf(split(SyncStatus.PENDING_CREATE, amount = "3.00", sourceId = "local-checking", destinationId = null)),
+            )
         assertEquals(BigDecimal("-3.00"), deltas["local-checking"])
     }
 
     @Test
     fun ignoresSplitsInOtherCurrency() {
-        val deltas = computePendingDeltas(
-            listOf(checking),
-            listOf(split(SyncStatus.PENDING_CREATE, amount = "3.00", sourceId = "1", destinationId = null, currency = "USD")),
-        )
+        val deltas =
+            computePendingDeltas(
+                listOf(checking),
+                listOf(split(SyncStatus.PENDING_CREATE, amount = "3.00", sourceId = "1", destinationId = null, currency = "USD")),
+            )
         assertTrue(deltas.isEmpty())
     }
 
-    private fun account(localId: String, serverId: String) = AccountEntity(
+    private fun account(
+        localId: String,
+        serverId: String,
+    ) = AccountEntity(
         localId = localId,
         serverId = serverId,
         name = localId,

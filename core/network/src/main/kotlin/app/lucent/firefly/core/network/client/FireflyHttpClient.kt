@@ -18,11 +18,12 @@ import kotlinx.serialization.json.Json
 /** Firefly III answers collection and item endpoints with JSON:API documents. */
 val JsonApiContentType: ContentType = ContentType("application", "vnd.api+json")
 
-val FireflyJson: Json = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = true
-    explicitNulls = false
-}
+val FireflyJson: Json =
+    Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        explicitNulls = false
+    }
 
 /**
  * Configures a client bound to one Firefly III server. Request bodies are sent as
@@ -54,11 +55,12 @@ fun HttpClientConfig<*>.installFirefly(
 
     if (logBodies) {
         install(Logging) {
-            logger = object : Logger {
-                override fun log(message: String) {
-                    Log.d("LucentNetwork", message)
+            logger =
+                object : Logger {
+                    override fun log(message: String) {
+                        Log.d("LucentNetwork", message)
+                    }
                 }
-            }
             level = LogLevel.BODY
             sanitizeHeader { header -> header == HttpHeaders.Authorization }
         }

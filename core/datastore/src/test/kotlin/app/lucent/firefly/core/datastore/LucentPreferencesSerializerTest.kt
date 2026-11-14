@@ -17,7 +17,6 @@ import java.io.ByteArrayOutputStream
  * round-trips, and resilience to corrupted input bytes.
  */
 class LucentPreferencesSerializerTest {
-
     private val serializer = LucentPreferencesSerializer
 
     // ─── defaultValue ──────────────────────────────────────────────────────────
@@ -31,63 +30,69 @@ class LucentPreferencesSerializerTest {
     // ─── Serialization round-trip ──────────────────────────────────────────────
 
     @Test
-    fun `writeTo then readFrom returns equal object for defaults`() = runTest {
-        val original = LucentPreferences()
-        val outputStream = ByteArrayOutputStream()
-        serializer.writeTo(original, outputStream)
+    fun `writeTo then readFrom returns equal object for defaults`() =
+        runTest {
+            val original = LucentPreferences()
+            val outputStream = ByteArrayOutputStream()
+            serializer.writeTo(original, outputStream)
 
-        val inputStream = ByteArrayInputStream(outputStream.toByteArray())
-        val restored = serializer.readFrom(inputStream)
+            val inputStream = ByteArrayInputStream(outputStream.toByteArray())
+            val restored = serializer.readFrom(inputStream)
 
-        assertEquals(original, restored)
-    }
+            assertEquals(original, restored)
+        }
 
     @Test
-    fun `writeTo then readFrom returns equal object for full state`() = runTest {
-        val original = LucentPreferences(
-            connection = app.lucent.firefly.core.datastore.model.ServerConnection(
-                baseUrl = "https://firefly.local",
-                encryptedPat = "encrypted-token-abc",
-                allowSelfSignedCert = true,
-                userId = "2",
-                userEmail = "user@example.com",
-                userRole = "owner",
-            ),
-            themeMode = app.lucent.firefly.core.datastore.model.ThemeMode.DARK,
-            useDynamicColor = false,
-            biometricAuthEnabled = true,
-        )
-        val outputStream = ByteArrayOutputStream()
-        serializer.writeTo(original, outputStream)
+    fun `writeTo then readFrom returns equal object for full state`() =
+        runTest {
+            val original =
+                LucentPreferences(
+                    connection =
+                        app.lucent.firefly.core.datastore.model.ServerConnection(
+                            baseUrl = "https://firefly.local",
+                            encryptedPat = "encrypted-token-abc",
+                            allowSelfSignedCert = true,
+                            userId = "2",
+                            userEmail = "user@example.com",
+                            userRole = "owner",
+                        ),
+                    themeMode = app.lucent.firefly.core.datastore.model.ThemeMode.DARK,
+                    useDynamicColor = false,
+                    biometricAuthEnabled = true,
+                )
+            val outputStream = ByteArrayOutputStream()
+            serializer.writeTo(original, outputStream)
 
-        val inputStream = ByteArrayInputStream(outputStream.toByteArray())
-        val restored = serializer.readFrom(inputStream)
+            val inputStream = ByteArrayInputStream(outputStream.toByteArray())
+            val restored = serializer.readFrom(inputStream)
 
-        assertEquals(original, restored)
-    }
+            assertEquals(original, restored)
+        }
 
     // ─── Empty input ───────────────────────────────────────────────────────────
 
     @Test
-    fun `readFrom empty stream returns defaultValue`() = runTest {
-        val inputStream = ByteArrayInputStream(ByteArray(0))
-        val result = serializer.readFrom(inputStream)
-        assertEquals(serializer.defaultValue, result)
-    }
+    fun `readFrom empty stream returns defaultValue`() =
+        runTest {
+            val inputStream = ByteArrayInputStream(ByteArray(0))
+            val result = serializer.readFrom(inputStream)
+            assertEquals(serializer.defaultValue, result)
+        }
 
     // ─── Corruption handling ───────────────────────────────────────────────────
 
     @Test
-    fun `readFrom corrupted bytes throws CorruptionException`() = runTest {
-        val corruptBytes = "not-valid-json-!@#$%^&*()".toByteArray()
-        val inputStream = ByteArrayInputStream(corruptBytes)
+    fun `readFrom corrupted bytes throws CorruptionException`() =
+        runTest {
+            val corruptBytes = "not-valid-json-!@#$%^&*()".toByteArray()
+            val inputStream = ByteArrayInputStream(corruptBytes)
 
-        val exception = runCatching { serializer.readFrom(inputStream) }.exceptionOrNull()
-        assertTrue(
-            "Expected CorruptionException but got ${exception?.javaClass}",
-            exception is androidx.datastore.core.CorruptionException,
-        )
-    }
+            val exception = runCatching { serializer.readFrom(inputStream) }.exceptionOrNull()
+            assertTrue(
+                "Expected CorruptionException but got ${exception?.javaClass}",
+                exception is androidx.datastore.core.CorruptionException,
+            )
+        }
 
     // ─── FakeAead round-trip ───────────────────────────────────────────────────
 

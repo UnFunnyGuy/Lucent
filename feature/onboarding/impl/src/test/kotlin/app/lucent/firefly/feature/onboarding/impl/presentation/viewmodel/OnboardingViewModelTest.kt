@@ -25,22 +25,25 @@ import org.junit.Before
 import org.junit.Test
 
 class OnboardingViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
 
     private class FakeAuthRepository : AuthRepository {
-        var authResult: Result<AuthSession> = Result.success(
-            AuthSession(
-                serverConfig = ServerConfig("https://firefly.example.com"),
-                user = AuthUser("2", "test@example.com", "owner"),
-                token = "token",
-            ),
-        )
+        var authResult: Result<AuthSession> =
+            Result.success(
+                AuthSession(
+                    serverConfig = ServerConfig("https://firefly.example.com"),
+                    user = AuthUser("2", "test@example.com", "owner"),
+                    token = "token",
+                ),
+            )
 
         override val activeSession: Flow<AuthSession?> = emptyFlow()
 
-        override suspend fun validateServer(baseUrl: String, token: String?, allowSelfSignedCert: Boolean): Result<ServerInfo> =
-            Result.success(ServerInfo(version = "6.7.8", apiVersion = "6.7.8"))
+        override suspend fun validateServer(
+            baseUrl: String,
+            token: String?,
+            allowSelfSignedCert: Boolean,
+        ): Result<ServerInfo> = Result.success(ServerInfo(version = "6.7.8", apiVersion = "6.7.8"))
 
         override suspend fun authenticate(
             baseUrl: String,
@@ -58,9 +61,10 @@ class OnboardingViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = FakeAuthRepository()
-        viewModel = OnboardingViewModel(
-            authenticateUseCase = AuthenticateUseCase(fakeRepository),
-        )
+        viewModel =
+            OnboardingViewModel(
+                authenticateUseCase = AuthenticateUseCase(fakeRepository),
+            )
     }
 
     @After
@@ -102,18 +106,19 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun connectClicked_success_emitsNavigateToDashboard() = runTest {
-        viewModel.onAction(OnboardingUiAction.UpdateServerUrl("https://my-firefly.org"))
-        viewModel.onAction(OnboardingUiAction.UpdateToken("valid-token"))
+    fun connectClicked_success_emitsNavigateToDashboard() =
+        runTest {
+            viewModel.onAction(OnboardingUiAction.UpdateServerUrl("https://my-firefly.org"))
+            viewModel.onAction(OnboardingUiAction.UpdateToken("valid-token"))
 
-        viewModel.uiEvent.test {
-            viewModel.onAction(OnboardingUiAction.Connect)
-            testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.uiEvent.test {
+                viewModel.onAction(OnboardingUiAction.Connect)
+                testDispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(OnboardingUiEvent.NavigateToDashboard, awaitItem())
-            cancelAndIgnoreRemainingEvents()
+                assertEquals(OnboardingUiEvent.NavigateToDashboard, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
     fun connectClicked_emptyUrl_setsErrorMessage() {
@@ -137,16 +142,17 @@ class OnboardingViewModelTest {
     }
 
     @Test
-    fun connectClicked_serverError_setsErrorMessage() = runTest {
-        fakeRepository.authResult = Result.error(AppError.ApiKeyError)
-        viewModel.onAction(OnboardingUiAction.UpdateServerUrl("https://my-firefly.org"))
-        viewModel.onAction(OnboardingUiAction.UpdateToken("bad-token"))
+    fun connectClicked_serverError_setsErrorMessage() =
+        runTest {
+            fakeRepository.authResult = Result.error(AppError.ApiKeyError)
+            viewModel.onAction(OnboardingUiAction.UpdateServerUrl("https://my-firefly.org"))
+            viewModel.onAction(OnboardingUiAction.UpdateToken("bad-token"))
 
-        viewModel.onAction(OnboardingUiAction.Connect)
-        testDispatcher.scheduler.advanceUntilIdle()
+            viewModel.onAction(OnboardingUiAction.Connect)
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.uiState.value
-        assertFalse(state.isLoading)
-        assertTrue(state.errorMessage?.isNotBlank() == true)
-    }
+            val state = viewModel.uiState.value
+            assertFalse(state.isLoading)
+            assertTrue(state.errorMessage?.isNotBlank() == true)
+        }
 }

@@ -36,54 +36,61 @@ class TransactionSyncHandler(
     private val remoteWriter: RemoteTransactionWriter,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : SyncEntityHandler {
-
     override val targetType: SyncTargetType = SyncTargetType.TRANSACTION
 
-    override suspend fun processSync(entry: SyncEntry): Result<Unit> = withContext(ioDispatcher) {
-        when (entry.operation) {
-            SyncOperation.CREATE -> handleCreate(entry)
-            SyncOperation.UPDATE -> handleUpdate(entry)
-            SyncOperation.DELETE -> handleDelete(entry)
+    override suspend fun processSync(entry: SyncEntry): Result<Unit> =
+        withContext(ioDispatcher) {
+            when (entry.operation) {
+                SyncOperation.CREATE -> handleCreate(entry)
+                SyncOperation.UPDATE -> handleUpdate(entry)
+                SyncOperation.DELETE -> handleDelete(entry)
+            }
         }
-    }
 
-    override suspend fun discard(entry: SyncEntry): Result<Unit> = withContext(ioDispatcher) {
-        when (entry.operation) {
-            SyncOperation.CREATE -> {
-                // An earlier attempt may have reached the server; don't leave that copy behind.
-                if (entry.previousAttempts > 0) {
-                    when (val existing = findRemoteByExternalId(entry.localId)) {
-                        is Result.Success -> existing.data?.let { remote ->
-                            val deleted = remoteDataSource.deleteTransaction(remote.id)
-                            if (deleted is Result.Error && !deleted.error.isNotFound()) return@withContext deleted
+    override suspend fun discard(entry: SyncEntry): Result<Unit> =
+        withContext(ioDispatcher) {
+            when (entry.operation) {
+                SyncOperation.CREATE -> {
+                    // An earlier attempt may have reached the server; don't leave that copy behind.
+                    if (entry.previousAttempts > 0) {
+                        when (val existing = findRemoteByExternalId(entry.localId)) {
+                            is Result.Success ->
+                                existing.data?.let { remote ->
+                                    val deleted = remoteDataSource.deleteTransaction(remote.id)
+                                    if (deleted is Result.Error && !deleted.error.isNotFound()) return@withContext deleted
+                                }
+                            is Result.Error -> return@withContext existing
                         }
-                        is Result.Error -> return@withContext existing
+                    }
+                    complete(entry) { transactionDao.deleteGroupWithSplits(entry.localId) }
+                }
+                SyncOperation.UPDATE -> {
+                    val serverId =
+                        transactionDao.getTransactionWithSplits(entry.localId)?.group?.serverId ?: entry.serverId
+                            ?: return@withContext complete(entry)
+                    when (val remote = remoteDataSource.getTransaction(serverId)) {
+                        is Result.Success ->
+                            complete(entry) {
+                                remoteWriter.upsert(remote.data.data, overwriteLocalChanges = true)
+                            }
+                        is Result.Error ->
+                            if (remote.error.isNotFound()) {
+                                complete(entry) { transactionDao.deleteGroupWithSplits(entry.localId) }
+                            } else {
+                                remote
+                            }
                     }
                 }
-                complete(entry) { transactionDao.deleteGroupWithSplits(entry.localId) }
-            }
-            SyncOperation.UPDATE -> {
-                val serverId = transactionDao.getTransactionWithSplits(entry.localId)?.group?.serverId ?: entry.serverId
-                    ?: return@withContext complete(entry)
-                when (val remote = remoteDataSource.getTransaction(serverId)) {
-                    is Result.Success -> complete(entry) {
-                        remoteWriter.upsert(remote.data.data, overwriteLocalChanges = true)
+                SyncOperation.DELETE ->
+                    complete(entry) {
+                        transactionDao
+                            .getTransactionWithSplits(entry.localId)
+                            ?.splits
+                            ?.filter { it.syncStatus == SyncStatus.PENDING_DELETE }
+                            ?.forEach { transactionDao.updateSplitSyncStatus(it.localSplitId, it.serverSplitId, SyncStatus.SYNCED) }
                     }
-                    is Result.Error ->
-                        if (remote.error.isNotFound()) {
-                            complete(entry) { transactionDao.deleteGroupWithSplits(entry.localId) }
-                        } else {
-                            remote
-                        }
-                }
-            }
-            SyncOperation.DELETE -> complete(entry) {
-                transactionDao.getTransactionWithSplits(entry.localId)?.splits
-                    ?.filter { it.syncStatus == SyncStatus.PENDING_DELETE }
-                    ?.forEach { transactionDao.updateSplitSyncStatus(it.localSplitId, it.serverSplitId, SyncStatus.SYNCED) }
             }
         }
-    }
 
     private suspend fun handleCreate(entry: SyncEntry): Result<Unit> {
         val local = transactionDao.getTransactionWithSplits(entry.localId)
@@ -117,8 +124,9 @@ class TransactionSyncHandler(
 
     private suspend fun handleUpdate(entry: SyncEntry): Result<Unit> {
         val local = transactionDao.getTransactionWithSplits(entry.localId) ?: return complete(entry)
-        val serverId = local.group.serverId ?: entry.serverId
-            ?: return Result.Error(AppError.Common("Transaction ${entry.localId} has no server copy to update"))
+        val serverId =
+            local.group.serverId ?: entry.serverId
+                ?: return Result.Error(AppError.Common("Transaction ${entry.localId} has no server copy to update"))
 
         when (val state = serverState(serverId, entry.baseUpdatedAt)) {
             ServerState.Unchanged -> Unit
@@ -138,7 +146,9 @@ class TransactionSyncHandler(
                             if (split.syncStatus == SyncStatus.PENDING_UPDATE) {
                                 transactionDao.updateSplitSyncStatus(
                                     split.localSplitId,
-                                    remote.attributes.transactions.getOrNull(index)?.transactionJournalId ?: split.serverSplitId,
+                                    remote.attributes.transactions
+                                        .getOrNull(index)
+                                        ?.transactionJournalId ?: split.serverSplitId,
                                     SyncStatus.SYNCED,
                                 )
                             }
@@ -168,13 +178,21 @@ class TransactionSyncHandler(
 
     private sealed interface ServerState {
         data object Unchanged : ServerState
+
         data object Changed : ServerState
+
         data object Missing : ServerState
-        data class Unknown(val error: AppError) : ServerState
+
+        data class Unknown(
+            val error: AppError,
+        ) : ServerState
     }
 
     /** Compares the server copy with [baseUpdatedAt]; no base means the user chose to overwrite. */
-    private suspend fun serverState(serverId: String, baseUpdatedAt: Long?): ServerState {
+    private suspend fun serverState(
+        serverId: String,
+        baseUpdatedAt: Long?,
+    ): ServerState {
         if (baseUpdatedAt == null) return ServerState.Unchanged
         return when (val remote = remoteDataSource.getTransaction(serverId)) {
             is Result.Success ->
@@ -189,30 +207,35 @@ class TransactionSyncHandler(
 
     private suspend fun findRemoteByExternalId(localId: String): Result<TransactionReadDto?> =
         when (val search = remoteDataSource.findTransactionsByExternalId(localId)) {
-            is Result.Success -> Result.Success(
-                search.data.data.firstOrNull { group ->
-                    group.attributes.transactions.any { it.externalId == localId }
-                }
-            )
+            is Result.Success ->
+                Result.Success(
+                    search.data.data.firstOrNull { group ->
+                        group.attributes.transactions.any { it.externalId == localId }
+                    },
+                )
             is Result.Error -> search
         }
 
-    private suspend fun linkCreated(entry: SyncEntry, remoteGroup: TransactionReadDto): Result<Unit> {
+    private suspend fun linkCreated(
+        entry: SyncEntry,
+        remoteGroup: TransactionReadDto,
+    ): Result<Unit> {
         val remoteSplits = remoteGroup.attributes.transactions
-        val linked = database.withTransaction {
-            val existing = transactionDao.getTransactionWithSplits(entry.localId) ?: return@withTransaction false
-            transactionDao.linkGroup(entry.localId, remoteGroup.id, parseIsoInstant(remoteGroup.attributes.updatedAt))
-            for ((index, split) in existing.splits.withIndex()) {
-                val status = if (split.syncStatus == SyncStatus.PENDING_CREATE) SyncStatus.SYNCED else split.syncStatus
-                transactionDao.updateSplitSyncStatus(
-                    localSplitId = split.localSplitId,
-                    serverSplitId = remoteSplits.getOrNull(index)?.transactionJournalId,
-                    status = status,
-                )
+        val linked =
+            database.withTransaction {
+                val existing = transactionDao.getTransactionWithSplits(entry.localId) ?: return@withTransaction false
+                transactionDao.linkGroup(entry.localId, remoteGroup.id, parseIsoInstant(remoteGroup.attributes.updatedAt))
+                for ((index, split) in existing.splits.withIndex()) {
+                    val status = if (split.syncStatus == SyncStatus.PENDING_CREATE) SyncStatus.SYNCED else split.syncStatus
+                    transactionDao.updateSplitSyncStatus(
+                        localSplitId = split.localSplitId,
+                        serverSplitId = remoteSplits.getOrNull(index)?.transactionJournalId,
+                        status = status,
+                    )
+                }
+                syncQueueDao.deleteById(entry.queueId)
+                true
             }
-            syncQueueDao.deleteById(entry.queueId)
-            true
-        }
         if (linked) return Result.Success(Unit)
 
         // Deleted locally while the create was in flight: remove the server copy too.
@@ -222,14 +245,20 @@ class TransactionSyncHandler(
         }
     }
 
-    private suspend fun markSynced(transaction: TransactionWithSplits, from: SyncStatus) {
+    private suspend fun markSynced(
+        transaction: TransactionWithSplits,
+        from: SyncStatus,
+    ) {
         transaction.splits
             .filter { it.syncStatus == from }
             .forEach { transactionDao.updateSplitSyncStatus(it.localSplitId, it.serverSplitId, SyncStatus.SYNCED) }
     }
 
     /** Applies the local side of a finished operation and removes its queue row atomically. */
-    private suspend fun complete(entry: SyncEntry, localChanges: suspend () -> Unit = {}): Result<Unit> {
+    private suspend fun complete(
+        entry: SyncEntry,
+        localChanges: suspend () -> Unit = {},
+    ): Result<Unit> {
         database.withTransaction {
             localChanges()
             syncQueueDao.deleteById(entry.queueId)

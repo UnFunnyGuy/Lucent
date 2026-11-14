@@ -9,7 +9,6 @@ import org.koin.core.annotation.Singleton
 
 @Singleton
 class OnboardingEntryProviderInstaller : EntryProviderInstaller {
-
     override fun install(scope: EntryProviderScope<NavKey>) {
         scope.entry<OnboardingNavKey> {
             // Leaving the auth graph is driven by the active session, not by this screen.

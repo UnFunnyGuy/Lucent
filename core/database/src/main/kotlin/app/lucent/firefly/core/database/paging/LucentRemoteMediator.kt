@@ -19,7 +19,9 @@ data class RemotePage<T>(
 )
 
 /** Carries the typed [AppError] of a failed page load through Paging's `LoadState.Error`. */
-class RemotePageException(val error: AppError) : Exception(error.errorMessage)
+class RemotePageException(
+    val error: AppError,
+) : Exception(error.errorMessage)
 
 /**
  * Pages a page-numbered remote list into Room, which stays the only source the UI reads.
@@ -45,10 +47,10 @@ class LucentRemoteMediator<Value : Any, Dto>(
     private val cacheTimeoutMillis: Long = DEFAULT_CACHE_TIMEOUT_MILLIS,
     private val now: () -> Long = System::currentTimeMillis,
 ) : RemoteMediator<Int, Value>() {
-
     override suspend fun initialize(): InitializeAction {
-        val lastRefresh = remoteKeyDao.getKey(listKey, LIST_ENTRY)?.lastUpdated
-            ?: return InitializeAction.LAUNCH_INITIAL_REFRESH
+        val lastRefresh =
+            remoteKeyDao.getKey(listKey, LIST_ENTRY)?.lastUpdated
+                ?: return InitializeAction.LAUNCH_INITIAL_REFRESH
         return if (now() - lastRefresh <= cacheTimeoutMillis) {
             InitializeAction.SKIP_INITIAL_REFRESH
         } else {
@@ -56,26 +58,31 @@ class LucentRemoteMediator<Value : Any, Dto>(
         }
     }
 
-    override suspend fun load(loadType: LoadType, state: PagingState<Int, Value>): MediatorResult {
-        val page = when (loadType) {
-            LoadType.REFRESH -> FIRST_PAGE
-            // The list starts at the newest item; REFRESH always covers the top.
-            LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-            LoadType.APPEND -> {
-                // No key yet means no refresh has completed; start from the first page.
-                val key = remoteKeyDao.getKey(listKey, LIST_ENTRY)
-                when {
-                    key == null -> FIRST_PAGE
-                    key.nextPage == null -> return MediatorResult.Success(endOfPaginationReached = true)
-                    else -> key.nextPage
+    override suspend fun load(
+        loadType: LoadType,
+        state: PagingState<Int, Value>,
+    ): MediatorResult {
+        val page =
+            when (loadType) {
+                LoadType.REFRESH -> FIRST_PAGE
+                // The list starts at the newest item; REFRESH always covers the top.
+                LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+                LoadType.APPEND -> {
+                    // No key yet means no refresh has completed; start from the first page.
+                    val key = remoteKeyDao.getKey(listKey, LIST_ENTRY)
+                    when {
+                        key == null -> FIRST_PAGE
+                        key.nextPage == null -> return MediatorResult.Success(endOfPaginationReached = true)
+                        else -> key.nextPage
+                    }
                 }
             }
-        }
 
-        val remotePage = when (val result = fetchPage(page)) {
-            is Result.Success -> result.data
-            is Result.Error -> return MediatorResult.Error(RemotePageException(result.error))
-        }
+        val remotePage =
+            when (val result = fetchPage(page)) {
+                is Result.Success -> result.data
+                is Result.Error -> return MediatorResult.Error(RemotePageException(result.error))
+            }
 
         database.withTransaction {
             val previous = remoteKeyDao.getKey(listKey, LIST_ENTRY)

@@ -37,10 +37,16 @@ import app.lucent.firefly.core.database.entity.TransactionSplitEntity
 @TypeConverters(LucentTypeConverters::class)
 abstract class LucentDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
+
     abstract fun transactionDao(): TransactionDao
+
     abstract fun syncQueueDao(): SyncQueueDao
+
     abstract fun remoteKeyDao(): RemoteKeyDao
+
     abstract fun categoryDao(): CategoryDao
+
     abstract fun budgetDao(): BudgetDao
+
     abstract fun syncMetadataDao(): SyncMetadataDao
 }

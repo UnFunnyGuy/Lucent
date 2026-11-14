@@ -6,13 +6,13 @@ enum class SyncTargetType {
     TRANSACTION,
     ACCOUNT,
     CATEGORY,
-    BUDGET
+    BUDGET,
 }
 
 enum class SyncOperation {
     CREATE,
     UPDATE,
-    DELETE
+    DELETE,
 }
 
 /**

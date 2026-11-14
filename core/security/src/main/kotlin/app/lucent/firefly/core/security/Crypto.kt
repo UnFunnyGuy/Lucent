@@ -6,7 +6,6 @@ import app.lucent.firefly.core.common.result.Result
  * Contract for encrypting and decrypting sensitive data, tokens, and payloads.
  */
 interface Crypto {
-
     /** Encrypts raw bytes. */
     fun encrypt(plaintext: ByteArray): ByteArray
 

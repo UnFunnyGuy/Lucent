@@ -13,13 +13,17 @@ import com.google.crypto.tink.Aead
  * It must never be used in production code.
  */
 internal class FakeAead : Aead {
-
     private val xorKey: Byte = 0xAB.toByte()
 
-    override fun encrypt(plaintext: ByteArray, associatedData: ByteArray?): ByteArray =
-        ByteArray(plaintext.size) { i -> (plaintext[i].toInt() xor xorKey.toInt()).toByte() }
+    override fun encrypt(
+        plaintext: ByteArray,
+        associatedData: ByteArray?,
+    ): ByteArray = ByteArray(plaintext.size) { i -> (plaintext[i].toInt() xor xorKey.toInt()).toByte() }
 
-    override fun decrypt(ciphertext: ByteArray, associatedData: ByteArray?): ByteArray =
+    override fun decrypt(
+        ciphertext: ByteArray,
+        associatedData: ByteArray?,
+    ): ByteArray =
         // XOR is its own inverse
         ByteArray(ciphertext.size) { i -> (ciphertext[i].toInt() xor xorKey.toInt()).toByte() }
 }

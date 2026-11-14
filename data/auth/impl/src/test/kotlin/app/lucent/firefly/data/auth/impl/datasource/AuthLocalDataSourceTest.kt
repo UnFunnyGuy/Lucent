@@ -20,18 +20,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AuthLocalDataSourceTest {
-
     private class FakeCrypto : Crypto {
         override fun encrypt(plaintext: ByteArray): ByteArray = plaintext
+
         override fun decrypt(encrypted: ByteArray): ByteArray = encrypted
 
         override fun encryptString(plaintext: String): String = "enc_$plaintext"
-        override fun decryptString(encryptedBase64: String): String =
-            encryptedBase64.removePrefix("enc_")
+
+        override fun decryptString(encryptedBase64: String): String = encryptedBase64.removePrefix("enc_")
 
         override fun encryptCatching(plaintext: ByteArray): Result<ByteArray> = Result.success(plaintext)
+
         override fun decryptCatching(encrypted: ByteArray): Result<ByteArray> = Result.success(encrypted)
+
         override fun encryptStringCatching(plaintext: String): Result<String> = Result.success(encryptString(plaintext))
+
         override fun decryptStringCatching(encryptedBase64: String): Result<String> = Result.success(decryptString(encryptedBase64))
     }
 
@@ -70,49 +73,51 @@ class AuthLocalDataSourceTest {
     }
 
     @Test
-    fun saveSession_storesEncryptedTokenAndEmitsSession() = runTest {
-        val prefs = FakePreferencesDataSource()
-        val localDataSource = DefaultAuthLocalDataSource(prefs, FakeCrypto())
+    fun saveSession_storesEncryptedTokenAndEmitsSession() =
+        runTest {
+            val prefs = FakePreferencesDataSource()
+            val localDataSource = DefaultAuthLocalDataSource(prefs, FakeCrypto())
 
-        localDataSource.activeSession.test {
-            assertNull(awaitItem())
+            localDataSource.activeSession.test {
+                assertNull(awaitItem())
 
+                localDataSource.saveSession(
+                    baseUrl = "https://firefly.test",
+                    token = "secret-token",
+                    user = AuthUser("1", "user@test.org", "owner"),
+                    allowSelfSignedCert = true,
+                )
+
+                val session = awaitItem()
+                assertEquals("https://firefly.test", session?.serverConfig?.baseUrl)
+                assertTrue(session?.serverConfig?.allowSelfSignedCert == true)
+                assertEquals("secret-token", session?.token)
+                assertEquals("1", session?.user?.id)
+                assertEquals("user@test.org", session?.user?.email)
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertEquals("enc_secret-token", prefs.connection.first()?.encryptedPat)
+        }
+
+    @Test
+    fun clearActiveSession_signsOutButRemembersTheAccount() =
+        runTest {
+            val localDataSource = DefaultAuthLocalDataSource(FakePreferencesDataSource(), FakeCrypto())
             localDataSource.saveSession(
                 baseUrl = "https://firefly.test",
                 token = "secret-token",
                 user = AuthUser("1", "user@test.org", "owner"),
-                allowSelfSignedCert = true,
+                allowSelfSignedCert = false,
             )
 
-            val session = awaitItem()
-            assertEquals("https://firefly.test", session?.serverConfig?.baseUrl)
-            assertTrue(session?.serverConfig?.allowSelfSignedCert == true)
-            assertEquals("secret-token", session?.token)
-            assertEquals("1", session?.user?.id)
-            assertEquals("user@test.org", session?.user?.email)
-            cancelAndIgnoreRemainingEvents()
+            localDataSource.activeSession.test {
+                assertTrue(awaitItem() != null)
+                localDataSource.clearActiveSession()
+                assertNull(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            assertTrue(localDataSource.isCurrentAccount("https://firefly.test", "1"))
+            assertFalse(localDataSource.isCurrentAccount("https://firefly.test", "2"))
+            assertFalse(localDataSource.isCurrentAccount("https://other.test", "1"))
         }
-        assertEquals("enc_secret-token", prefs.connection.first()?.encryptedPat)
-    }
-
-    @Test
-    fun clearActiveSession_signsOutButRemembersTheAccount() = runTest {
-        val localDataSource = DefaultAuthLocalDataSource(FakePreferencesDataSource(), FakeCrypto())
-        localDataSource.saveSession(
-            baseUrl = "https://firefly.test",
-            token = "secret-token",
-            user = AuthUser("1", "user@test.org", "owner"),
-            allowSelfSignedCert = false,
-        )
-
-        localDataSource.activeSession.test {
-            assertTrue(awaitItem() != null)
-            localDataSource.clearActiveSession()
-            assertNull(awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
-        assertTrue(localDataSource.isCurrentAccount("https://firefly.test", "1"))
-        assertFalse(localDataSource.isCurrentAccount("https://firefly.test", "2"))
-        assertFalse(localDataSource.isCurrentAccount("https://other.test", "1"))
-    }
 }

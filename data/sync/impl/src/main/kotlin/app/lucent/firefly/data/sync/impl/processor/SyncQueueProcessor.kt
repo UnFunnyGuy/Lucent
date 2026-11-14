@@ -25,7 +25,6 @@ class SyncQueueProcessor(
     private val statusStore: SyncStatusStore,
     private val handlers: List<SyncEntityHandler>,
 ) {
-
     suspend fun drain(): DrainResult {
         val handlerMap = handlers.associateBy { it.targetType }
         // An entity whose operation failed is blocked for the rest of this run so that
@@ -57,13 +56,14 @@ class SyncQueueProcessor(
                 }
 
                 syncQueueDao.markAttemptStarted(item.id)
-                val error = when (val result = handler.processSync(item.toEntry())) {
-                    is Result.Success -> {
-                        pushedAny = true
-                        continue
+                val error =
+                    when (val result = handler.processSync(item.toEntry())) {
+                        is Result.Success -> {
+                            pushedAny = true
+                            continue
+                        }
+                        is Result.Error -> result.error
                     }
-                    is Result.Error -> result.error
-                }
                 blockedEntities += entityKey
                 val attempts = item.attemptCount + 1
                 when (error.failureKind()) {
@@ -89,17 +89,19 @@ class SyncQueueProcessor(
 
     private enum class FailureKind { TRANSIENT, AUTHENTICATION, CONFLICT, PERMANENT }
 
-    private fun AppError.failureKind(): FailureKind = when (this) {
-        AppError.Network.NO_INTERNET,
-        AppError.Network.TIMEOUT,
-        AppError.Network.SERVER_UNREACHABLE,
-        AppError.Network.SERVER_ERROR,
-        AppError.Network.UNKNOWN -> FailureKind.TRANSIENT
-        AppError.ApiKeyError -> FailureKind.AUTHENTICATION
-        is AppError.Conflict -> FailureKind.CONFLICT
-        // Rejected payloads, untrusted certificates and unreadable responses will not fix themselves.
-        else -> FailureKind.PERMANENT
-    }
+    private fun AppError.failureKind(): FailureKind =
+        when (this) {
+            AppError.Network.NO_INTERNET,
+            AppError.Network.TIMEOUT,
+            AppError.Network.SERVER_UNREACHABLE,
+            AppError.Network.SERVER_ERROR,
+            AppError.Network.UNKNOWN,
+            -> FailureKind.TRANSIENT
+            AppError.ApiKeyError -> FailureKind.AUTHENTICATION
+            is AppError.Conflict -> FailureKind.CONFLICT
+            // Rejected payloads, untrusted certificates and unreadable responses will not fix themselves.
+            else -> FailureKind.PERMANENT
+        }
 
     private companion object {
         const val MAX_TRANSIENT_ATTEMPTS = 10

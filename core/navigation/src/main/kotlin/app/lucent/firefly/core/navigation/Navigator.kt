@@ -7,7 +7,6 @@ import org.koin.core.annotation.Singleton
 
 @Singleton
 class Navigator {
-
     val backStack: SnapshotStateList<NavKey> = mutableStateListOf()
 
     var currentGraph: NavGraph? = null

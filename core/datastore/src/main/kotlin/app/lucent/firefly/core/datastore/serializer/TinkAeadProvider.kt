@@ -22,7 +22,6 @@ import org.koin.core.annotation.Factory
 class TinkAeadProvider(
     private val context: Context,
 ) {
-
     /**
      * Returns an [Aead] primitive ready for use with `AeadSerializer`.
      *
@@ -31,16 +30,19 @@ class TinkAeadProvider(
      */
     fun getAead(): Aead {
         AeadConfig.register()
-        val keysetHandle = AndroidKeysetManager.Builder()
-            .withSharedPref(
-                context,
-                /* keysetName = */ "lucent_datastore_keyset",
-                /* prefFileName = */ "lucent_keyset_prefs",
-            )
-            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-            .withMasterKeyUri("android-keystore://lucent_datastore_master_key")
-            .build()
-            .keysetHandle
+        val keysetHandle =
+            AndroidKeysetManager
+                .Builder()
+                .withSharedPref(
+                    context,
+                    // keysetName =
+                    "lucent_datastore_keyset",
+                    // prefFileName =
+                    "lucent_keyset_prefs",
+                ).withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+                .withMasterKeyUri("android-keystore://lucent_datastore_master_key")
+                .build()
+                .keysetHandle
 
         return keysetHandle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
     }

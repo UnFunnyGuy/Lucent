@@ -24,28 +24,32 @@ import org.robolectric.RobolectricTestRunner
 @OptIn(ExperimentalPagingApi::class)
 @RunWith(RobolectricTestRunner::class)
 class LucentRemoteMediatorTest {
-
     private lateinit var database: LucentDatabase
     private val requestedPages = mutableListOf<Int>()
     private val persisted = mutableListOf<String>()
     private var clock = 1_000_000L
-    private val pages = mapOf(
-        1 to RemotePage(listOf("a", "b"), hasNextPage = true),
-        2 to RemotePage(listOf("c"), hasNextPage = false),
-    )
-    private val emptyState = PagingState<Int, String>(
-        pages = emptyList(),
-        anchorPosition = null,
-        config = PagingConfig(pageSize = 2),
-        leadingPlaceholderCount = 0,
-    )
+    private val pages =
+        mapOf(
+            1 to RemotePage(listOf("a", "b"), hasNextPage = true),
+            2 to RemotePage(listOf("c"), hasNextPage = false),
+        )
+    private val emptyState =
+        PagingState<Int, String>(
+            pages = emptyList(),
+            anchorPosition = null,
+            config = PagingConfig(pageSize = 2),
+            leadingPlaceholderCount = 0,
+        )
 
     @Before
     fun setup() {
-        database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext<Context>(),
-            LucentDatabase::class.java,
-        ).allowMainThreadQueries().build()
+        database =
+            Room
+                .inMemoryDatabaseBuilder(
+                    ApplicationProvider.getApplicationContext<Context>(),
+                    LucentDatabase::class.java,
+                ).allowMainThreadQueries()
+                .build()
     }
 
     @After
@@ -58,68 +62,76 @@ class LucentRemoteMediatorTest {
             database = database,
             remoteKeyDao = database.remoteKeyDao(),
             listKey = "items",
-            fetchPage = { page -> requestedPages += page; fetch(page) },
+            fetchPage = { page ->
+                requestedPages += page
+                fetch(page)
+            },
             persistPage = { persisted += it },
             cacheTimeoutMillis = 100,
             now = { clock },
         )
 
     @Test
-    fun refreshesOnFirstOpenAndSkipsWhileFresh() = runTest {
-        val mediator = mediator()
-        assertEquals(RemoteMediator.InitializeAction.LAUNCH_INITIAL_REFRESH, mediator.initialize())
+    fun refreshesOnFirstOpenAndSkipsWhileFresh() =
+        runTest {
+            val mediator = mediator()
+            assertEquals(RemoteMediator.InitializeAction.LAUNCH_INITIAL_REFRESH, mediator.initialize())
 
-        mediator.load(LoadType.REFRESH, emptyState)
-        clock += 50
-        assertEquals(RemoteMediator.InitializeAction.SKIP_INITIAL_REFRESH, mediator.initialize())
+            mediator.load(LoadType.REFRESH, emptyState)
+            clock += 50
+            assertEquals(RemoteMediator.InitializeAction.SKIP_INITIAL_REFRESH, mediator.initialize())
 
-        clock += 100
-        assertEquals(RemoteMediator.InitializeAction.LAUNCH_INITIAL_REFRESH, mediator.initialize())
-    }
-
-    @Test
-    fun refreshThenAppendWalksPagesUntilTheEnd() = runTest {
-        val mediator = mediator()
-
-        val refresh = mediator.load(LoadType.REFRESH, emptyState) as RemoteMediator.MediatorResult.Success
-        val append = mediator.load(LoadType.APPEND, emptyState) as RemoteMediator.MediatorResult.Success
-        val afterEnd = mediator.load(LoadType.APPEND, emptyState) as RemoteMediator.MediatorResult.Success
-
-        assertFalse(refresh.endOfPaginationReached)
-        assertTrue(append.endOfPaginationReached)
-        assertTrue(afterEnd.endOfPaginationReached)
-        assertEquals(listOf(1, 2), requestedPages)
-        assertEquals(listOf("a", "b", "c"), persisted)
-    }
+            clock += 100
+            assertEquals(RemoteMediator.InitializeAction.LAUNCH_INITIAL_REFRESH, mediator.initialize())
+        }
 
     @Test
-    fun appendDoesNotCountAsARefresh() = runTest {
-        val mediator = mediator()
-        mediator.load(LoadType.REFRESH, emptyState)
-        clock += 90
-        mediator.load(LoadType.APPEND, emptyState)
-        clock += 20
+    fun refreshThenAppendWalksPagesUntilTheEnd() =
+        runTest {
+            val mediator = mediator()
 
-        assertEquals(RemoteMediator.InitializeAction.LAUNCH_INITIAL_REFRESH, mediator.initialize())
-    }
+            val refresh = mediator.load(LoadType.REFRESH, emptyState) as RemoteMediator.MediatorResult.Success
+            val append = mediator.load(LoadType.APPEND, emptyState) as RemoteMediator.MediatorResult.Success
+            val afterEnd = mediator.load(LoadType.APPEND, emptyState) as RemoteMediator.MediatorResult.Success
 
-    @Test
-    fun prependNeverFetches() = runTest {
-        val result = mediator().load(LoadType.PREPEND, emptyState) as RemoteMediator.MediatorResult.Success
-
-        assertTrue(result.endOfPaginationReached)
-        assertTrue(requestedPages.isEmpty())
-    }
+            assertFalse(refresh.endOfPaginationReached)
+            assertTrue(append.endOfPaginationReached)
+            assertTrue(afterEnd.endOfPaginationReached)
+            assertEquals(listOf(1, 2), requestedPages)
+            assertEquals(listOf("a", "b", "c"), persisted)
+        }
 
     @Test
-    fun failedFetchReportsTypedErrorAndKeepsTheKey() = runTest {
-        val mediator = mediator()
-        mediator.load(LoadType.REFRESH, emptyState)
+    fun appendDoesNotCountAsARefresh() =
+        runTest {
+            val mediator = mediator()
+            mediator.load(LoadType.REFRESH, emptyState)
+            clock += 90
+            mediator.load(LoadType.APPEND, emptyState)
+            clock += 20
 
-        val failing = mediator { Result.Error(AppError.Network.TIMEOUT) }
-        val result = failing.load(LoadType.APPEND, emptyState) as RemoteMediator.MediatorResult.Error
+            assertEquals(RemoteMediator.InitializeAction.LAUNCH_INITIAL_REFRESH, mediator.initialize())
+        }
 
-        assertEquals(AppError.Network.TIMEOUT, (result.throwable as RemotePageException).error)
-        assertEquals(2, database.remoteKeyDao().getKey("items", LucentRemoteMediator.LIST_ENTRY)?.nextPage)
-    }
+    @Test
+    fun prependNeverFetches() =
+        runTest {
+            val result = mediator().load(LoadType.PREPEND, emptyState) as RemoteMediator.MediatorResult.Success
+
+            assertTrue(result.endOfPaginationReached)
+            assertTrue(requestedPages.isEmpty())
+        }
+
+    @Test
+    fun failedFetchReportsTypedErrorAndKeepsTheKey() =
+        runTest {
+            val mediator = mediator()
+            mediator.load(LoadType.REFRESH, emptyState)
+
+            val failing = mediator { Result.Error(AppError.Network.TIMEOUT) }
+            val result = failing.load(LoadType.APPEND, emptyState) as RemoteMediator.MediatorResult.Error
+
+            assertEquals(AppError.Network.TIMEOUT, (result.throwable as RemotePageException).error)
+            assertEquals(2, database.remoteKeyDao().getKey("items", LucentRemoteMediator.LIST_ENTRY)?.nextPage)
+        }
 }

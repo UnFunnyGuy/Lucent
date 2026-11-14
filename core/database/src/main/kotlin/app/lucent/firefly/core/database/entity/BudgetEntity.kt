@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "budgets",
     indices = [
-        Index(value = ["serverId"], unique = true)
-    ]
+        Index(value = ["serverId"], unique = true),
+    ],
 )
 data class BudgetEntity(
     @PrimaryKey val localId: String,

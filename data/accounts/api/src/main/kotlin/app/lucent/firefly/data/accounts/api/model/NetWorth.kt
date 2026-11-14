@@ -14,21 +14,24 @@ import app.lucent.firefly.core.common.model.Money
  * Returns null when no account qualifies.
  */
 fun calculateNetWorth(accounts: List<Account>): Money? {
-    val included = accounts.filter { account ->
-        account.active &&
-            account.includeInNetWorth &&
-            (account.type == AccountType.ASSET || account.type == AccountType.LIABILITY)
-    }
-    val target = included.firstNotNullOfOrNull { it.primaryCurrency }
-        ?: included.firstOrNull()?.currency
-        ?: return null
+    val included =
+        accounts.filter { account ->
+            account.active &&
+                account.includeInNetWorth &&
+                (account.type == AccountType.ASSET || account.type == AccountType.LIABILITY)
+        }
+    val target =
+        included.firstNotNullOfOrNull { it.primaryCurrency }
+            ?: included.firstOrNull()?.currency
+            ?: return null
 
     return included.fold(Money.zero(target)) { total, account ->
-        val contribution = when {
-            account.currency.code == target.code -> account.displayBalance
-            account.primaryCurrencyBalance?.currency?.code == target.code -> account.primaryCurrencyBalance
-            else -> null
-        }
+        val contribution =
+            when {
+                account.currency.code == target.code -> account.displayBalance
+                account.primaryCurrencyBalance?.currency?.code == target.code -> account.primaryCurrencyBalance
+                else -> null
+            }
         if (contribution == null) total else Money(total.amount + contribution.amount, target)
     }
 }

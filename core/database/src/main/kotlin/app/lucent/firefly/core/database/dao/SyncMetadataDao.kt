@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SyncMetadataDao {
-
     @Query("SELECT * FROM sync_metadata WHERE id = 0")
     fun observe(): Flow<SyncMetadataEntity?>
 
@@ -20,7 +19,10 @@ interface SyncMetadataDao {
     suspend fun upsert(metadata: SyncMetadataEntity)
 
     @Transaction
-    suspend fun markSynced(at: Long, deep: Boolean) {
+    suspend fun markSynced(
+        at: Long,
+        deep: Boolean,
+    ) {
         val current = get() ?: SyncMetadataEntity()
         upsert(
             current.copy(

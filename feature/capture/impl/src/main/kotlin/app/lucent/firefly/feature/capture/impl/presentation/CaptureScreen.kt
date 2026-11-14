@@ -71,11 +71,11 @@ import app.lucent.firefly.feature.capture.impl.presentation.viewmodel.CaptureUiE
 import app.lucent.firefly.feature.capture.impl.presentation.viewmodel.CaptureUiState
 import app.lucent.firefly.feature.capture.impl.presentation.viewmodel.CaptureViewModel
 import app.lucent.firefly.feature.capture.impl.presentation.viewmodel.withAccountDefaults
+import org.koin.compose.viewmodel.koinViewModel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun CaptureRoute(
@@ -106,10 +106,11 @@ fun CaptureScreen(
     val accent = state.type.accentColor()
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding()
-            .padding(horizontal = 16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .imePadding()
+                .padding(horizontal = 16.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { onAction(CaptureUiAction.Dismiss) }) {
@@ -143,9 +144,10 @@ fun CaptureScreen(
         )
 
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState()),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (state.ownAccounts.isEmpty()) {
@@ -218,9 +220,10 @@ fun CaptureScreen(
         Button(
             onClick = { onAction(CaptureUiAction.Save) },
             enabled = state.canSave,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = accent),
         ) {
@@ -235,9 +238,14 @@ fun CaptureScreen(
     }
 
     if (isDatePickerOpen) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = state.date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        )
+        val pickerState =
+            rememberDatePickerState(
+                initialSelectedDateMillis =
+                    state.date
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli(),
+            )
         DatePickerDialog(
             onDismissRequest = { isDatePickerOpen = false },
             confirmButton = {
@@ -344,10 +352,11 @@ private fun DescriptionField(
         },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Sentences,
-            imeAction = ImeAction.Done,
-        ),
+        keyboardOptions =
+            KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done,
+            ),
         keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
     )
 }
@@ -373,24 +382,31 @@ private fun DateChips(
     }
 }
 
-private fun TransactionType.label(): String = when (this) {
-    TransactionType.DEPOSIT -> "Income"
-    TransactionType.TRANSFER -> "Transfer"
-    else -> "Expense"
-}
+private fun TransactionType.label(): String =
+    when (this) {
+        TransactionType.DEPOSIT -> "Income"
+        TransactionType.TRANSFER -> "Transfer"
+        else -> "Expense"
+    }
 
 @Composable
-private fun TransactionType.accentColor(): Color = when (this) {
-    TransactionType.DEPOSIT -> LucentTheme.colors.income
-    TransactionType.TRANSFER -> LucentTheme.colors.transfer
-    else -> LucentTheme.colors.expense
-}
+private fun TransactionType.accentColor(): Color =
+    when (this) {
+        TransactionType.DEPOSIT -> LucentTheme.colors.income
+        TransactionType.TRANSFER -> LucentTheme.colors.transfer
+        else -> LucentTheme.colors.expense
+    }
 
 @Preview(showBackground = true, heightDp = 800)
 @Composable
 private fun CaptureScreenPreview() {
     val eur = Currency(code = "EUR", symbol = "€")
-    fun account(id: String, name: String, balance: String) = Account(
+
+    fun account(
+        id: String,
+        name: String,
+        balance: String,
+    ) = Account(
         id = id,
         serverId = id,
         name = name,
@@ -404,11 +420,12 @@ private fun CaptureScreenPreview() {
     )
     LucentTheme {
         CaptureScreen(
-            state = CaptureUiState(
-                amountInput = "24.50",
-                accounts = listOf(account("1", "Checking", "1240.00"), account("2", "Savings", "8000.00")),
-                description = "Groceries",
-            ).withAccountDefaults(),
+            state =
+                CaptureUiState(
+                    amountInput = "24.50",
+                    accounts = listOf(account("1", "Checking", "1240.00"), account("2", "Savings", "8000.00")),
+                    description = "Groceries",
+                ).withAccountDefaults(),
             onAction = {},
         )
     }

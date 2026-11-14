@@ -11,7 +11,6 @@ import java.math.BigDecimal
 import java.time.OffsetDateTime
 
 class TransactionMappersTest {
-
     @Test
     fun parsesFireflyOffsetDates() {
         assertEquals(1_759_276_800_000L, parseIsoInstant("2025-10-01T00:00:00+00:00"))
@@ -21,14 +20,15 @@ class TransactionMappersTest {
 
     @Test
     fun storeDtoCarriesCurrencyAndOffsetDateAndLeavesCounterpartyEmpty() {
-        val draft = TransactionDraft(
-            type = TransactionType.WITHDRAWAL,
-            amount = Money(BigDecimal("4.50"), Currency(code = "EUR", symbol = "€")),
-            description = "Coffee",
-            sourceId = "1",
-            sourceName = "Checking",
-            date = 1_759_276_800_000L,
-        )
+        val draft =
+            TransactionDraft(
+                type = TransactionType.WITHDRAWAL,
+                amount = Money(BigDecimal("4.50"), Currency(code = "EUR", symbol = "€")),
+                description = "Coffee",
+                sourceId = "1",
+                sourceName = "Checking",
+                date = 1_759_276_800_000L,
+            )
 
         val split = draft.toStoreDto(externalId = "g-1").transactions.single()
 

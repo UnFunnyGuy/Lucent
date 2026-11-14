@@ -23,7 +23,6 @@ import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
-
     private val navigator: Navigator by inject()
 
     private val entryProviders: EntryProviderInstallers by inject()
@@ -54,6 +53,7 @@ private fun LucentApp(
 ) {
     if (state.isSessionResolved) {
         LucentNavDisplay(
+            modifier = Modifier.fillMaxSize(),
             navigator = navigator,
             entryProviderInstallers = entryProviderInstallers,
         )

@@ -20,21 +20,18 @@ import org.koin.core.annotation.Singleton
 @Configuration
 @ComponentScan("app.lucent.firefly.core.database")
 class DatabaseModule {
-
     @Singleton
-    fun provideDatabase(
-        context: Context
-    ): LucentDatabase {
-        return Room.databaseBuilder(
-            context,
-            LucentDatabase::class.java,
-            DATABASE_NAME
-        )
+    fun provideDatabase(context: Context): LucentDatabase =
+        Room
+            .databaseBuilder(
+                context,
+                LucentDatabase::class.java,
+                DATABASE_NAME,
+            )
             // Pre-release: a schema change resets the local cache instead of migrating it.
             .fallbackToDestructiveMigration(dropAllTables = true)
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .build()
-    }
 
     @Factory
     fun provideAccountDao(database: LucentDatabase): AccountDao = database.accountDao()

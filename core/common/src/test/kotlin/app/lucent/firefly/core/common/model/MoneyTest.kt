@@ -7,7 +7,6 @@ import org.junit.Test
 import java.math.BigDecimal
 
 class MoneyTest {
-
     private val eur = Currency(id = "1", code = "EUR", symbol = "€", decimalPlaces = 2)
     private val usd = Currency(id = "2", code = "USD", symbol = "$", decimalPlaces = 2)
 

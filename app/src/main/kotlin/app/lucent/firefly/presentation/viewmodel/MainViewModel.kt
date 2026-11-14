@@ -13,7 +13,6 @@ class MainViewModel(
     private val getActiveSessionUseCase: GetActiveSessionUseCase,
     private val navigator: Navigator,
 ) : BaseViewModel<MainUiState, MainUiEvent, MainUiAction>() {
-
     override fun initialState(): MainUiState = MainUiState()
 
     init {

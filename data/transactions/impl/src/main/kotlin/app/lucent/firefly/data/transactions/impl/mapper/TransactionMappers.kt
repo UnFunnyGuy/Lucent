@@ -22,21 +22,20 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-fun TransactionReadDto.toGroupEntity(existingLocalId: String? = null): TransactionGroupEntity {
-    return TransactionGroupEntity(
+fun TransactionReadDto.toGroupEntity(existingLocalId: String? = null): TransactionGroupEntity =
+    TransactionGroupEntity(
         localId = existingLocalId ?: UUID.randomUUID().toString(),
         serverId = id,
         groupTitle = attributes.groupTitle,
         createdAt = parseIsoInstant(attributes.createdAt),
         updatedAt = parseIsoInstant(attributes.updatedAt),
     )
-}
 
 fun TransactionSplitDto.toSplitEntity(
     groupId: String,
     existingLocalId: String? = null,
-): TransactionSplitEntity {
-    return TransactionSplitEntity(
+): TransactionSplitEntity =
+    TransactionSplitEntity(
         localSplitId = existingLocalId ?: UUID.randomUUID().toString(),
         transactionGroupId = groupId,
         serverSplitId = transactionJournalId,
@@ -59,10 +58,9 @@ fun TransactionSplitDto.toSplitEntity(
         tags = tags ?: emptyList(),
         syncStatus = SyncStatus.SYNCED,
     )
-}
 
-fun TransactionWithSplits.toDomain(): Transaction {
-    return Transaction(
+fun TransactionWithSplits.toDomain(): Transaction =
+    Transaction(
         id = group.localId,
         serverId = group.serverId,
         title = group.groupTitle,
@@ -70,14 +68,14 @@ fun TransactionWithSplits.toDomain(): Transaction {
         createdAt = group.createdAt,
         updatedAt = group.updatedAt,
     )
-}
 
 fun TransactionSplitEntity.toDomain(): TransactionSplit {
-    val currency = Currency(
-        code = currencyCode,
-        symbol = currencySymbol,
-        decimalPlaces = currencyDecimalPlaces
-    )
+    val currency =
+        Currency(
+            code = currencyCode,
+            symbol = currencySymbol,
+            decimalPlaces = currencyDecimalPlaces,
+        )
     return TransactionSplit(
         splitId = localSplitId,
         serverSplitId = serverSplitId,
@@ -100,18 +98,20 @@ fun TransactionSplitEntity.toDomain(): TransactionSplit {
     )
 }
 
-fun TransactionDraft.toGroupEntity(groupId: String): TransactionGroupEntity {
-    return TransactionGroupEntity(
+fun TransactionDraft.toGroupEntity(groupId: String): TransactionGroupEntity =
+    TransactionGroupEntity(
         localId = groupId,
         serverId = null,
         groupTitle = null,
         createdAt = date,
         updatedAt = date,
     )
-}
 
-fun TransactionDraft.toSplitEntity(splitId: String, groupId: String): TransactionSplitEntity {
-    return TransactionSplitEntity(
+fun TransactionDraft.toSplitEntity(
+    splitId: String,
+    groupId: String,
+): TransactionSplitEntity =
+    TransactionSplitEntity(
         localSplitId = splitId,
         transactionGroupId = groupId,
         serverSplitId = null,
@@ -134,85 +134,88 @@ fun TransactionDraft.toSplitEntity(splitId: String, groupId: String): Transactio
         tags = tags,
         syncStatus = SyncStatus.PENDING_CREATE,
     )
-}
 
-fun TransactionDraft.toStoreDto(externalId: String): TransactionStoreDto {
-    return TransactionStoreDto(
-        transactions = listOf(
-            TransactionSplitStoreDto(
-                type = type.name.lowercase(),
-                date = formatOffsetDate(date),
-                amount = amount.amount.toPlainString(),
-                description = description,
-                sourceId = sourceId?.ifBlank { null },
-                sourceName = sourceName?.ifBlank { null },
-                destinationId = destinationId?.ifBlank { null },
-                destinationName = destinationName?.ifBlank { null },
-                categoryId = categoryId?.ifBlank { null },
-                categoryName = categoryName?.ifBlank { null },
-                budgetId = budgetId?.ifBlank { null },
-                budgetName = budgetName?.ifBlank { null },
-                currencyCode = amount.currency.code,
-                notes = notes?.ifBlank { null },
-                tags = tags.ifEmpty { null },
-                externalId = externalId,
-            )
-        )
+fun TransactionDraft.toStoreDto(externalId: String): TransactionStoreDto =
+    TransactionStoreDto(
+        transactions =
+            listOf(
+                TransactionSplitStoreDto(
+                    type = type.name.lowercase(),
+                    date = formatOffsetDate(date),
+                    amount = amount.amount.toPlainString(),
+                    description = description,
+                    sourceId = sourceId?.ifBlank { null },
+                    sourceName = sourceName?.ifBlank { null },
+                    destinationId = destinationId?.ifBlank { null },
+                    destinationName = destinationName?.ifBlank { null },
+                    categoryId = categoryId?.ifBlank { null },
+                    categoryName = categoryName?.ifBlank { null },
+                    budgetId = budgetId?.ifBlank { null },
+                    budgetName = budgetName?.ifBlank { null },
+                    currencyCode = amount.currency.code,
+                    notes = notes?.ifBlank { null },
+                    tags = tags.ifEmpty { null },
+                    externalId = externalId,
+                ),
+            ),
     )
-}
 
 /** Builds the create request from the current local rows; [externalId] makes retries idempotent. */
-fun TransactionWithSplits.toStoreDto(externalId: String): TransactionStoreDto = TransactionStoreDto(
-    groupTitle = group.groupTitle,
-    transactions = splits.sortedBy { it.order }.map { split ->
-        TransactionSplitStoreDto(
-            type = split.type,
-            date = formatOffsetDate(split.date),
-            amount = split.amount,
-            description = split.description,
-            sourceId = split.sourceId,
-            sourceName = split.sourceName,
-            destinationId = split.destinationId,
-            destinationName = split.destinationName,
-            categoryId = split.categoryId,
-            categoryName = split.categoryName,
-            budgetId = split.budgetId,
-            budgetName = split.budgetName,
-            currencyCode = split.currencyCode,
-            notes = split.notes,
-            tags = split.tags.ifEmpty { null },
-            externalId = externalId,
-        )
-    },
-)
+fun TransactionWithSplits.toStoreDto(externalId: String): TransactionStoreDto =
+    TransactionStoreDto(
+        groupTitle = group.groupTitle,
+        transactions =
+            splits.sortedBy { it.order }.map { split ->
+                TransactionSplitStoreDto(
+                    type = split.type,
+                    date = formatOffsetDate(split.date),
+                    amount = split.amount,
+                    description = split.description,
+                    sourceId = split.sourceId,
+                    sourceName = split.sourceName,
+                    destinationId = split.destinationId,
+                    destinationName = split.destinationName,
+                    categoryId = split.categoryId,
+                    categoryName = split.categoryName,
+                    budgetId = split.budgetId,
+                    budgetName = split.budgetName,
+                    currencyCode = split.currencyCode,
+                    notes = split.notes,
+                    tags = split.tags.ifEmpty { null },
+                    externalId = externalId,
+                )
+            },
+    )
 
 /**
  * Builds the update request from the current local rows. Notes are sent as an empty string when
  * cleared so the server removes them; other unset fields are omitted and keep their server value.
  */
-fun TransactionWithSplits.toUpdateDto(): TransactionUpdateDto = TransactionUpdateDto(
-    groupTitle = group.groupTitle,
-    transactions = splits.sortedBy { it.order }.map { split ->
-        TransactionSplitUpdateDto(
-            transactionJournalId = split.serverSplitId,
-            type = split.type,
-            date = formatOffsetDate(split.date),
-            amount = split.amount,
-            description = split.description,
-            sourceId = split.sourceId,
-            sourceName = split.sourceName,
-            destinationId = split.destinationId,
-            destinationName = split.destinationName,
-            categoryId = split.categoryId,
-            categoryName = split.categoryName,
-            budgetId = split.budgetId,
-            budgetName = split.budgetName,
-            currencyCode = split.currencyCode,
-            notes = split.notes.orEmpty(),
-            tags = split.tags,
-        )
-    },
-)
+fun TransactionWithSplits.toUpdateDto(): TransactionUpdateDto =
+    TransactionUpdateDto(
+        groupTitle = group.groupTitle,
+        transactions =
+            splits.sortedBy { it.order }.map { split ->
+                TransactionSplitUpdateDto(
+                    transactionJournalId = split.serverSplitId,
+                    type = split.type,
+                    date = formatOffsetDate(split.date),
+                    amount = split.amount,
+                    description = split.description,
+                    sourceId = split.sourceId,
+                    sourceName = split.sourceName,
+                    destinationId = split.destinationId,
+                    destinationName = split.destinationName,
+                    categoryId = split.categoryId,
+                    categoryName = split.categoryName,
+                    budgetId = split.budgetId,
+                    budgetName = split.budgetName,
+                    currencyCode = split.currencyCode,
+                    notes = split.notes.orEmpty(),
+                    tags = split.tags,
+                )
+            },
+    )
 
 internal fun formatOffsetDate(epochMillis: Long): String =
     DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(

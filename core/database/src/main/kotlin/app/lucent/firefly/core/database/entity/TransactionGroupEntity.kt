@@ -9,7 +9,7 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["serverId"], unique = true),
         Index(value = ["createdAt"]),
-    ]
+    ],
 )
 data class TransactionGroupEntity(
     @PrimaryKey val localId: String,

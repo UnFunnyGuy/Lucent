@@ -27,7 +27,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ResultTest {
-
     @Test
     fun successCreationAndAccessors() {
         val result: Result<String> = Result.success("test data")
@@ -49,7 +48,12 @@ class ResultTest {
         assertNull(result.getOrNull())
         assertEquals("default", result.getOrDefault("default"))
         assertEquals("fallback", result.getOrElse { "fallback" })
-        assertEquals("fallback from error: NO_INTERNET", result.getOrElse { err -> "fallback from error: ${err.errorMessage}" })
+        assertEquals(
+            "fallback from error: NO_INTERNET",
+            result.getOrElse { err ->
+                "fallback from error: ${err.errorMessage}"
+            },
+        )
     }
 
     @Test
@@ -95,7 +99,8 @@ class ResultTest {
         var successData: String? = null
         var failureError: AppError? = null
 
-        Result.success("ok")
+        Result
+            .success("ok")
             .onSuccess { successData = it }
             .onFailure { failureError = it }
 
@@ -103,7 +108,8 @@ class ResultTest {
         assertNull(failureError)
 
         val err = AppError.Database("disk full")
-        Result.error(err)
+        Result
+            .error(err)
             .onSuccess { successData = "changed" }
             .onFailure { failureError = it }
 
@@ -114,17 +120,19 @@ class ResultTest {
     @Test
     fun foldHandlesBothBranches() {
         val successResult: Result<Int> = Result.success(42)
-        val successFolded = successResult.fold(
-            onSuccess = { "Value: $it" },
-            onFailure = { "Error: ${it.errorMessage}" },
-        )
+        val successFolded =
+            successResult.fold(
+                onSuccess = { "Value: $it" },
+                onFailure = { "Error: ${it.errorMessage}" },
+            )
         assertEquals("Value: 42", successFolded)
 
         val errorResult: Result<Int> = Result.error(AppError.ApiKeyError)
-        val errorFolded = errorResult.fold(
-            onSuccess = { "Value: $it" },
-            onFailure = { "Error: ${it.errorMessage}" },
-        )
+        val errorFolded =
+            errorResult.fold(
+                onSuccess = { "Value: $it" },
+                onFailure = { "Error: ${it.errorMessage}" },
+            )
         assertEquals("Error: API key error", errorFolded)
     }
 
@@ -176,28 +184,31 @@ class ResultTest {
     }
 
     @Test
-    fun asResultEmitsSuccess() = runTest {
-        val flow = flowOf("hello")
+    fun asResultEmitsSuccess() =
+        runTest {
+            val flow = flowOf("hello")
 
-        flow.asResult().test {
-            assertEquals(Result.Success("hello"), awaitItem())
-            awaitComplete()
+            flow.asResult().test {
+                assertEquals(Result.Success("hello"), awaitItem())
+                awaitComplete()
+            }
         }
-    }
 
     @Test
-    fun asResultEmitsErrorOnFailure() = runTest {
-        val flow = flow<String> {
-            throw IllegalStateException("Test stream failure")
-        }
+    fun asResultEmitsErrorOnFailure() =
+        runTest {
+            val flow =
+                flow<String> {
+                    throw IllegalStateException("Test stream failure")
+                }
 
-        flow.asResult().test {
-            val errorItem = awaitItem()
-            assertTrue(errorItem is Result.Error)
-            val appError = (errorItem as Result.Error).error
-            assertTrue(appError is AppError.Common)
-            assertEquals("Test stream failure", appError.errorMessage)
-            awaitComplete()
+            flow.asResult().test {
+                val errorItem = awaitItem()
+                assertTrue(errorItem is Result.Error)
+                val appError = (errorItem as Result.Error).error
+                assertTrue(appError is AppError.Common)
+                assertEquals("Test stream failure", appError.errorMessage)
+                awaitComplete()
+            }
         }
-    }
 }

@@ -13,7 +13,6 @@ import org.koin.core.annotation.Singleton
 class DashboardEntryProviderInstaller(
     private val navigator: Navigator,
 ) : EntryProviderInstaller {
-
     override fun install(scope: EntryProviderScope<NavKey>) {
         scope.entry<DashboardNavKey> {
             DashboardRoute(

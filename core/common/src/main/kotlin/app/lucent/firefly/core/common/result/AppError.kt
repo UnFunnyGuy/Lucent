@@ -4,7 +4,6 @@ package app.lucent.firefly.core.common.result
  * Application errors categorized for domain UseCases and presentation ViewModels.
  */
 sealed interface AppError : Error {
-
     data class Database(
         val message: String,
         val cause: Throwable? = null,
@@ -18,7 +17,9 @@ sealed interface AppError : Error {
     data object ApiKeyError : AppError
 
     /** The server copy changed since the local edit was based on it. */
-    data class Conflict(val message: String) : AppError
+    data class Conflict(
+        val message: String,
+    ) : AppError
 
     enum class Network : AppError {
         NO_INTERNET,
@@ -44,12 +45,13 @@ sealed interface AppError : Error {
         get() = this == Network.NO_INTERNET
 
     val errorMessage: String
-        get() = when (this) {
-            is Database -> message
-            is Common -> message
-            is Network -> name
-            is ApiError -> message
-            is Conflict -> message
-            ApiKeyError -> "API key error"
-        }
+        get() =
+            when (this) {
+                is Database -> message
+                is Common -> message
+                is Network -> name
+                is ApiError -> message
+                is Conflict -> message
+                ApiKeyError -> "API key error"
+            }
 }

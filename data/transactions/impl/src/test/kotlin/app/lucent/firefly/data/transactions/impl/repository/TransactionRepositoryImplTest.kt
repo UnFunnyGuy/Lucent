@@ -42,7 +42,6 @@ import java.time.Instant
 
 @RunWith(RobolectricTestRunner::class)
 class TransactionRepositoryImplTest {
-
     private lateinit var database: LucentDatabase
     private lateinit var transactionDao: TransactionDao
     private lateinit var syncQueueDao: SyncQueueDao
@@ -56,11 +55,12 @@ class TransactionRepositoryImplTest {
 
     private val eur = Currency(code = "EUR", symbol = "€", decimalPlaces = 2)
 
-    private val testSession = AuthSession(
-        serverConfig = ServerConfig(baseUrl = "https://demo.firefly.org"),
-        user = AuthUser(id = "user-1", email = "test@example.com", role = "owner"),
-        token = "secret-pat",
-    )
+    private val testSession =
+        AuthSession(
+            serverConfig = ServerConfig(baseUrl = "https://demo.firefly.org"),
+            user = AuthUser(id = "user-1", email = "test@example.com", role = "owner"),
+            token = "secret-pat",
+        )
 
     // The recent window for this clock is 2026-02-01 .. 2026-03-15.
     private val now = Instant.parse("2026-03-15T12:00:00Z")
@@ -68,24 +68,27 @@ class TransactionRepositoryImplTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            Room
+                .inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
         transactionDao = database.transactionDao()
         syncQueueDao = database.syncQueueDao()
         every { authRepository.activeSession } returns activeSessionFlow
         activeSessionFlow.value = testSession
 
-        repository = TransactionRepositoryImpl(
-            database = database,
-            transactionDao = transactionDao,
-            remoteKeyDao = database.remoteKeyDao(),
-            syncQueueDao = syncQueueDao,
-            remoteDataSource = remoteDataSource,
-            remoteWriter = RemoteTransactionWriter(transactionDao, syncQueueDao),
-            syncManager = syncManager,
-            ioDispatcher = testDispatcher,
-        )
+        repository =
+            TransactionRepositoryImpl(
+                database = database,
+                transactionDao = transactionDao,
+                remoteKeyDao = database.remoteKeyDao(),
+                syncQueueDao = syncQueueDao,
+                remoteDataSource = remoteDataSource,
+                remoteWriter = RemoteTransactionWriter(transactionDao, syncQueueDao),
+                syncManager = syncManager,
+                ioDispatcher = testDispatcher,
+            )
     }
 
     @After
@@ -94,98 +97,110 @@ class TransactionRepositoryImplTest {
     }
 
     @Test
-    fun createStoresTransactionAndQueuesOneCreate() = runTest(testDispatcher) {
-        val groupId = (repository.createTransaction(draft("Groceries", "45.50")) as Result.Success).data
+    fun createStoresTransactionAndQueuesOneCreate() =
+        runTest(testDispatcher) {
+            val groupId = (repository.createTransaction(draft("Groceries", "45.50")) as Result.Success).data
 
-        val stored = transactionDao.getTransactionWithSplits(groupId)!!
-        assertEquals("45.50", stored.splits.single().amount)
-        assertEquals(SyncStatus.PENDING_CREATE, stored.splits.single().syncStatus)
-        val queued = syncQueueDao.getPendingQueue().single()
-        assertEquals(SyncAction.CREATE, queued.action)
-        assertEquals(groupId, queued.localEntityId)
-        verify { syncManager.requestSync(expedited = true) }
-    }
-
-    @Test
-    fun createRejectsZeroAmount() = runTest(testDispatcher) {
-        assertTrue(repository.createTransaction(draft("Nothing", "0")) is Result.Error)
-        assertTrue(syncQueueDao.getPendingQueue().isEmpty())
-    }
-
-    @Test
-    fun editBeforeUploadIsMergedIntoTheQueuedCreate() = runTest(testDispatcher) {
-        val groupId = (repository.createTransaction(draft("Coffee", "3.00")) as Result.Success).data
-
-        repository.updateTransaction(groupId, draft("Coffee and cake", "7.50"))
-
-        val split = transactionDao.getTransactionWithSplits(groupId)!!.splits.single()
-        assertEquals("7.50", split.amount)
-        assertEquals(SyncStatus.PENDING_CREATE, split.syncStatus)
-        assertEquals(listOf(SyncAction.CREATE), syncQueueDao.getPendingQueue().map { it.action })
-    }
-
-    @Test
-    fun editOfSyncedTransactionQueuesUpdateWithServerBaseVersion() = runTest(testDispatcher) {
-        insertSyncedGroup(localId = "g-1", serverId = "srv-1", splitLocalId = "s-1", journalId = "j-1", updatedAt = 42L)
-
-        repository.updateTransaction("g-1", draft("Snack", "6.00"))
-
-        val split = transactionDao.getSplitByLocalId("s-1")!!
-        assertEquals(SyncStatus.PENDING_UPDATE, split.syncStatus)
-        assertEquals("j-1", split.serverSplitId)
-        val queued = syncQueueDao.getPendingQueue().single()
-        assertEquals(SyncAction.UPDATE, queued.action)
-        assertEquals(42L, queued.baseUpdatedAt)
-    }
-
-    @Test
-    fun deleteOfUnsyncedTransactionRemovesItAndItsQueuedCreate() = runTest(testDispatcher) {
-        val groupId = (repository.createTransaction(draft("Coffee", "12.00")) as Result.Success).data
-
-        assertTrue(repository.deleteTransaction(groupId) is Result.Success)
-
-        assertNull(transactionDao.getTransactionWithSplits(groupId))
-        assertTrue(syncQueueDao.getPendingQueue().isEmpty())
-    }
-
-    @Test
-    fun deleteAfterEditReplacesTheQueuedUpdateAndKeepsItsBase() = runTest(testDispatcher) {
-        insertSyncedGroup(localId = "g-1", serverId = "srv-1", splitLocalId = "s-1", journalId = "j-1", updatedAt = 42L)
-        repository.updateTransaction("g-1", draft("Snack", "6.00"))
-
-        repository.deleteTransaction("g-1")
-
-        val queued = syncQueueDao.getPendingQueue().single()
-        assertEquals(SyncAction.DELETE, queued.action)
-        assertEquals(42L, queued.baseUpdatedAt)
-        assertEquals(SyncStatus.PENDING_DELETE, transactionDao.getSplitByLocalId("s-1")!!.syncStatus)
-        repository.observeTransactions().test {
-            assertTrue(awaitItem().isEmpty())
+            val stored = transactionDao.getTransactionWithSplits(groupId)!!
+            assertEquals("45.50", stored.splits.single().amount)
+            assertEquals(SyncStatus.PENDING_CREATE, stored.splits.single().syncStatus)
+            val queued = syncQueueDao.getPendingQueue().single()
+            assertEquals(SyncAction.CREATE, queued.action)
+            assertEquals(groupId, queued.localEntityId)
+            verify { syncManager.requestSync(expedited = true) }
         }
-    }
 
     @Test
-    fun updateOfMissingTransactionFailsWithoutQueueing() = runTest(testDispatcher) {
-        assertTrue(repository.updateTransaction("missing", draft("Snack", "6.00")) is Result.Error)
-        assertTrue(syncQueueDao.getPendingQueue().isEmpty())
-    }
+    fun createRejectsZeroAmount() =
+        runTest(testDispatcher) {
+            assertTrue(repository.createTransaction(draft("Nothing", "0")) is Result.Error)
+            assertTrue(syncQueueDao.getPendingQueue().isEmpty())
+        }
 
     @Test
-    fun updateIsRejectedWhileTheTransactionIsBeingDeleted() = runTest(testDispatcher) {
-        insertSyncedGroup(localId = "g-1", serverId = "srv-1", splitLocalId = "s-1", journalId = "j-1", updatedAt = 42L)
-        repository.deleteTransaction("g-1")
+    fun editBeforeUploadIsMergedIntoTheQueuedCreate() =
+        runTest(testDispatcher) {
+            val groupId = (repository.createTransaction(draft("Coffee", "3.00")) as Result.Success).data
 
-        assertTrue(repository.updateTransaction("g-1", draft("Snack", "6.00")) is Result.Error)
-        assertEquals(listOf(SyncAction.DELETE), syncQueueDao.getPendingQueue().map { it.action })
-    }
+            repository.updateTransaction(groupId, draft("Coffee and cake", "7.50"))
+
+            val split = transactionDao.getTransactionWithSplits(groupId)!!.splits.single()
+            assertEquals("7.50", split.amount)
+            assertEquals(SyncStatus.PENDING_CREATE, split.syncStatus)
+            assertEquals(listOf(SyncAction.CREATE), syncQueueDao.getPendingQueue().map { it.action })
+        }
 
     @Test
-    fun deleteOfMissingTransactionFailsWithoutQueueing() = runTest(testDispatcher) {
-        assertTrue(repository.deleteTransaction("missing") is Result.Error)
-        assertTrue(syncQueueDao.getPendingQueue().isEmpty())
-    }
+    fun editOfSyncedTransactionQueuesUpdateWithServerBaseVersion() =
+        runTest(testDispatcher) {
+            insertSyncedGroup(localId = "g-1", serverId = "srv-1", splitLocalId = "s-1", journalId = "j-1", updatedAt = 42L)
 
-    private fun draft(description: String, amount: String) = TransactionDraft(
+            repository.updateTransaction("g-1", draft("Snack", "6.00"))
+
+            val split = transactionDao.getSplitByLocalId("s-1")!!
+            assertEquals(SyncStatus.PENDING_UPDATE, split.syncStatus)
+            assertEquals("j-1", split.serverSplitId)
+            val queued = syncQueueDao.getPendingQueue().single()
+            assertEquals(SyncAction.UPDATE, queued.action)
+            assertEquals(42L, queued.baseUpdatedAt)
+        }
+
+    @Test
+    fun deleteOfUnsyncedTransactionRemovesItAndItsQueuedCreate() =
+        runTest(testDispatcher) {
+            val groupId = (repository.createTransaction(draft("Coffee", "12.00")) as Result.Success).data
+
+            assertTrue(repository.deleteTransaction(groupId) is Result.Success)
+
+            assertNull(transactionDao.getTransactionWithSplits(groupId))
+            assertTrue(syncQueueDao.getPendingQueue().isEmpty())
+        }
+
+    @Test
+    fun deleteAfterEditReplacesTheQueuedUpdateAndKeepsItsBase() =
+        runTest(testDispatcher) {
+            insertSyncedGroup(localId = "g-1", serverId = "srv-1", splitLocalId = "s-1", journalId = "j-1", updatedAt = 42L)
+            repository.updateTransaction("g-1", draft("Snack", "6.00"))
+
+            repository.deleteTransaction("g-1")
+
+            val queued = syncQueueDao.getPendingQueue().single()
+            assertEquals(SyncAction.DELETE, queued.action)
+            assertEquals(42L, queued.baseUpdatedAt)
+            assertEquals(SyncStatus.PENDING_DELETE, transactionDao.getSplitByLocalId("s-1")!!.syncStatus)
+            repository.observeTransactions().test {
+                assertTrue(awaitItem().isEmpty())
+            }
+        }
+
+    @Test
+    fun updateOfMissingTransactionFailsWithoutQueueing() =
+        runTest(testDispatcher) {
+            assertTrue(repository.updateTransaction("missing", draft("Snack", "6.00")) is Result.Error)
+            assertTrue(syncQueueDao.getPendingQueue().isEmpty())
+        }
+
+    @Test
+    fun updateIsRejectedWhileTheTransactionIsBeingDeleted() =
+        runTest(testDispatcher) {
+            insertSyncedGroup(localId = "g-1", serverId = "srv-1", splitLocalId = "s-1", journalId = "j-1", updatedAt = 42L)
+            repository.deleteTransaction("g-1")
+
+            assertTrue(repository.updateTransaction("g-1", draft("Snack", "6.00")) is Result.Error)
+            assertEquals(listOf(SyncAction.DELETE), syncQueueDao.getPendingQueue().map { it.action })
+        }
+
+    @Test
+    fun deleteOfMissingTransactionFailsWithoutQueueing() =
+        runTest(testDispatcher) {
+            assertTrue(repository.deleteTransaction("missing") is Result.Error)
+            assertTrue(syncQueueDao.getPendingQueue().isEmpty())
+        }
+
+    private fun draft(
+        description: String,
+        amount: String,
+    ) = TransactionDraft(
         type = TransactionType.WITHDRAWAL,
         amount = Money(BigDecimal(amount), eur),
         description = description,

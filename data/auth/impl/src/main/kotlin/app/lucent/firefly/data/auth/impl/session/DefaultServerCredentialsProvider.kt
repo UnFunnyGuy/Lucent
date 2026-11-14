@@ -23,26 +23,27 @@ class DefaultServerCredentialsProvider(
     localDataSource: AuthLocalDataSource,
     @param:ApplicationScope scope: CoroutineScope,
 ) : ServerCredentialsProvider {
+    private val state: StateFlow<CredentialsState> =
+        localDataSource.activeSession
+            .map { session ->
+                CredentialsState.Loaded(
+                    session?.let {
+                        ServerCredentials(
+                            baseUrl = it.serverConfig.baseUrl,
+                            token = it.token,
+                            allowSelfSignedCert = it.serverConfig.allowSelfSignedCert,
+                        )
+                    },
+                )
+            }.stateIn(scope, SharingStarted.Eagerly, CredentialsState.Loading)
 
-    private val state: StateFlow<CredentialsState> = localDataSource.activeSession
-        .map { session ->
-            CredentialsState.Loaded(
-                session?.let {
-                    ServerCredentials(
-                        baseUrl = it.serverConfig.baseUrl,
-                        token = it.token,
-                        allowSelfSignedCert = it.serverConfig.allowSelfSignedCert,
-                    )
-                },
-            )
-        }
-        .stateIn(scope, SharingStarted.Eagerly, CredentialsState.Loading)
-
-    override suspend fun currentCredentials(): ServerCredentials? =
-        state.filterIsInstance<CredentialsState.Loaded>().first().credentials
+    override suspend fun currentCredentials(): ServerCredentials? = state.filterIsInstance<CredentialsState.Loaded>().first().credentials
 
     private sealed interface CredentialsState {
         data object Loading : CredentialsState
-        data class Loaded(val credentials: ServerCredentials?) : CredentialsState
+
+        data class Loaded(
+            val credentials: ServerCredentials?,
+        ) : CredentialsState
     }
 }

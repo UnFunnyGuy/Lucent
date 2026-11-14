@@ -10,6 +10,5 @@ import org.koin.core.annotation.Factory
 class ObserveSyncStateUseCase(
     private val syncManager: SyncManager,
 ) : NoParamsUseCase<SyncState> {
-
     override fun performStreaming(): Flow<SyncState> = syncManager.syncState
 }

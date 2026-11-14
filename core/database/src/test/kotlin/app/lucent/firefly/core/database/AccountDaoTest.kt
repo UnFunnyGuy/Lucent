@@ -10,8 +10,6 @@ import app.lucent.firefly.core.database.model.SyncStatus
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,16 +17,17 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class AccountDaoTest {
-
     private lateinit var database: LucentDatabase
     private lateinit var accountDao: AccountDao
 
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            Room
+                .inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
         accountDao = database.accountDao()
     }
 
@@ -38,32 +37,34 @@ class AccountDaoTest {
     }
 
     @Test
-    fun observeAccountsOrdersByOrderThenName() = runTest {
-        accountDao.insertOrReplace(
-            listOf(
-                createAccount(id = "b", name = "Savings", order = 2),
-                createAccount(id = "a", name = "Checking", order = 1),
-            ),
-        )
+    fun observeAccountsOrdersByOrderThenName() =
+        runTest {
+            accountDao.insertOrReplace(
+                listOf(
+                    createAccount(id = "b", name = "Savings", order = 2),
+                    createAccount(id = "a", name = "Checking", order = 1),
+                ),
+            )
 
-        accountDao.observeAccounts().test {
-            assertEquals(listOf("a", "b"), awaitItem().map { it.localId })
+            accountDao.observeAccounts().test {
+                assertEquals(listOf("a", "b"), awaitItem().map { it.localId })
+            }
         }
-    }
 
     @Test
-    fun observeActiveAccountsExcludesArchived() = runTest {
-        val activeAccount = createAccount(id = "active", active = true)
-        val archivedAccount = createAccount(id = "archived", active = false)
+    fun observeActiveAccountsExcludesArchived() =
+        runTest {
+            val activeAccount = createAccount(id = "active", active = true)
+            val archivedAccount = createAccount(id = "archived", active = false)
 
-        accountDao.insertOrReplace(listOf(activeAccount, archivedAccount))
+            accountDao.insertOrReplace(listOf(activeAccount, archivedAccount))
 
-        accountDao.observeActiveAccounts().test {
-            val accounts = awaitItem()
-            assertEquals(1, accounts.size)
-            assertEquals("active", accounts[0].localId)
+            accountDao.observeActiveAccounts().test {
+                val accounts = awaitItem()
+                assertEquals(1, accounts.size)
+                assertEquals("active", accounts[0].localId)
+            }
         }
-    }
 
     private fun createAccount(
         id: String,
@@ -84,6 +85,6 @@ class AccountDaoTest {
         active = active,
         order = order,
         syncStatus = status,
-        updatedAt = System.currentTimeMillis()
+        updatedAt = System.currentTimeMillis(),
     )
 }

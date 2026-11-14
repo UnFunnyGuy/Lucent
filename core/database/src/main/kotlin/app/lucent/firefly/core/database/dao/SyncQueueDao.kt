@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SyncQueueDao {
-
     @Query("SELECT * FROM sync_queue WHERE status = 'PENDING' ORDER BY id ASC")
     suspend fun getPendingQueue(): List<SyncQueueEntity>
 
@@ -24,7 +23,10 @@ interface SyncQueueDao {
 
     /** All operations for one entity, in any status. */
     @Query("SELECT * FROM sync_queue WHERE entityType = :entityType AND localEntityId = :localEntityId ORDER BY id ASC")
-    suspend fun getForEntity(entityType: SyncEntityType, localEntityId: String): List<SyncQueueEntity>
+    suspend fun getForEntity(
+        entityType: SyncEntityType,
+        localEntityId: String,
+    ): List<SyncQueueEntity>
 
     @Query("SELECT * FROM sync_queue WHERE id = :id")
     suspend fun getById(id: Long): SyncQueueEntity?
@@ -36,23 +38,37 @@ interface SyncQueueDao {
     suspend fun deleteById(id: Long)
 
     @Query("DELETE FROM sync_queue WHERE entityType = :entityType AND localEntityId = :localEntityId")
-    suspend fun deleteByEntity(entityType: SyncEntityType, localEntityId: String)
+    suspend fun deleteByEntity(
+        entityType: SyncEntityType,
+        localEntityId: String,
+    )
 
     /** Recorded before the request is sent, so an attempt interrupted by process death is still counted. */
     @Query("UPDATE sync_queue SET attemptCount = attemptCount + 1 WHERE id = :id")
     suspend fun markAttemptStarted(id: Long)
 
     @Query("UPDATE sync_queue SET lastError = :lastError WHERE id = :id")
-    suspend fun recordError(id: Long, lastError: String?)
+    suspend fun recordError(
+        id: Long,
+        lastError: String?,
+    )
 
     @Query("UPDATE sync_queue SET status = 'FAILED', lastError = :lastError, isConflict = :isConflict WHERE id = :id")
-    suspend fun markFailed(id: Long, lastError: String, isConflict: Boolean = false)
+    suspend fun markFailed(
+        id: Long,
+        lastError: String,
+        isConflict: Boolean = false,
+    )
 
-    @Query("UPDATE sync_queue SET status = 'PENDING', attemptCount = 0, lastError = NULL, isConflict = 0 WHERE id = :id")
+    @Query(
+        "UPDATE sync_queue SET status = 'PENDING', attemptCount = 0, lastError = NULL, isConflict = 0 WHERE id = :id",
+    )
     suspend fun resetForRetry(id: Long)
 
     /** Retry that overwrites server-side changes: the conflict check is skipped. */
-    @Query("UPDATE sync_queue SET status = 'PENDING', attemptCount = 0, lastError = NULL, isConflict = 0, baseUpdatedAt = NULL WHERE id = :id")
+    @Query(
+        "UPDATE sync_queue SET status = 'PENDING', attemptCount = 0, lastError = NULL, isConflict = 0, baseUpdatedAt = NULL WHERE id = :id",
+    )
     suspend fun resetForOverwrite(id: Long)
 
     @Query("SELECT COUNT(*) FROM sync_queue WHERE status = 'PENDING'")
@@ -75,13 +91,14 @@ interface SyncQueueDao {
         baseUpdatedAt: Long?,
     ): EnqueueResult {
         val existing = getForEntity(entityType, localEntityId).lastOrNull()
-        val newEntry = SyncQueueEntity(
-            entityType = entityType,
-            action = action,
-            localEntityId = localEntityId,
-            serverEntityId = serverEntityId,
-            baseUpdatedAt = baseUpdatedAt,
-        )
+        val newEntry =
+            SyncQueueEntity(
+                entityType = entityType,
+                action = action,
+                localEntityId = localEntityId,
+                serverEntityId = serverEntityId,
+                baseUpdatedAt = baseUpdatedAt,
+            )
         if (existing == null) {
             enqueue(newEntry)
             return EnqueueResult.QUEUED
@@ -92,18 +109,19 @@ interface SyncQueueDao {
                 resetForRetry(existing.id)
                 EnqueueResult.MERGED
             }
-            SyncAction.DELETE -> when (existing.action) {
-                SyncAction.CREATE -> {
-                    deleteByEntity(entityType, localEntityId)
-                    EnqueueResult.CANCELLED_CREATE
+            SyncAction.DELETE ->
+                when (existing.action) {
+                    SyncAction.CREATE -> {
+                        deleteByEntity(entityType, localEntityId)
+                        EnqueueResult.CANCELLED_CREATE
+                    }
+                    SyncAction.UPDATE -> {
+                        deleteById(existing.id)
+                        enqueue(newEntry.copy(baseUpdatedAt = existing.baseUpdatedAt ?: baseUpdatedAt))
+                        EnqueueResult.MERGED
+                    }
+                    SyncAction.DELETE -> EnqueueResult.MERGED
                 }
-                SyncAction.UPDATE -> {
-                    deleteById(existing.id)
-                    enqueue(newEntry.copy(baseUpdatedAt = existing.baseUpdatedAt ?: baseUpdatedAt))
-                    EnqueueResult.MERGED
-                }
-                SyncAction.DELETE -> EnqueueResult.MERGED
-            }
         }
     }
 }

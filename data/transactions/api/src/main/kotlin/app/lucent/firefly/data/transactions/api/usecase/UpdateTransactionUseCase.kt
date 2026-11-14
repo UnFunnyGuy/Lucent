@@ -10,9 +10,10 @@ import org.koin.core.annotation.Factory
 class UpdateTransactionUseCase(
     private val repository: TransactionRepository,
 ) : BaseUseCase<UpdateTransactionUseCase.Params, Result<Unit>> {
+    data class Params(
+        val transactionId: String,
+        val draft: TransactionDraft,
+    )
 
-    data class Params(val transactionId: String, val draft: TransactionDraft)
-
-    override suspend fun perform(params: Params): Result<Unit> =
-        repository.updateTransaction(params.transactionId, params.draft)
+    override suspend fun perform(params: Params): Result<Unit> = repository.updateTransaction(params.transactionId, params.draft)
 }

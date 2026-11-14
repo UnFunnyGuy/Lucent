@@ -9,17 +9,16 @@ import app.lucent.firefly.data.accounts.api.usecase.ObserveAccountsUseCase
 import app.lucent.firefly.data.transactions.api.model.TransactionDraft
 import app.lucent.firefly.data.transactions.api.model.TransactionType
 import app.lucent.firefly.data.transactions.api.usecase.CreateTransactionUseCase
+import org.koin.core.annotation.KoinViewModel
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
 class CaptureViewModel(
     private val observeAccountsUseCase: ObserveAccountsUseCase,
     private val createTransactionUseCase: CreateTransactionUseCase,
 ) : BaseViewModel<CaptureUiState, CaptureUiEvent, CaptureUiAction>() {
-
     override fun initialState(): CaptureUiState = CaptureUiState()
 
     init {
@@ -59,19 +58,20 @@ class CaptureViewModel(
 
         val source = state.sourceAccount.takeIf { state.needsSource }
         val destination = state.destinationAccount.takeIf { state.needsDestination }
-        val draft = TransactionDraft(
-            type = state.type,
-            date = state.date.toTransactionTime(),
-            amount = Money.of(state.amountInput, currency),
-            description = state.description.trim(),
-            // Only real account ids are sent: Firefly creates a new expense or revenue account for an
-            // unknown name, and an empty counterparty uses its built-in cash account.
-            sourceId = source?.serverId,
-            sourceName = source?.name,
-            destinationId = destination?.serverId,
-            destinationName = destination?.name,
-            notes = state.notes.trim().ifBlank { null },
-        )
+        val draft =
+            TransactionDraft(
+                type = state.type,
+                date = state.date.toTransactionTime(),
+                amount = Money.of(state.amountInput, currency),
+                description = state.description.trim(),
+                // Only real account ids are sent: Firefly creates a new expense or revenue account for an
+                // unknown name, and an empty counterparty uses its built-in cash account.
+                sourceId = source?.serverId,
+                sourceName = source?.name,
+                destinationId = destination?.serverId,
+                destinationName = destination?.name,
+                notes = state.notes.trim().ifBlank { null },
+            )
 
         viewmodelLaunch {
             update { copy(isSaving = true, errorMessage = null) }
@@ -92,16 +92,19 @@ class CaptureViewModel(
             copy(sourceAccountId = accountId)
         }.withAccountDefaults()
 
-    private fun CaptureUiState.selectDestination(accountId: String): CaptureUiState =
-        copy(destinationAccountId = accountId).withAccountDefaults()
+    private fun CaptureUiState.selectDestination(accountId: String): CaptureUiState = copy(destinationAccountId = accountId).withAccountDefaults()
 
-    private fun appendDigit(current: String, digit: Char): String = when {
-        digit == '.' -> if (current.contains('.')) current else "$current."
-        current.contains('.') && current.substringAfter('.').length >= MAX_DECIMALS -> current
-        current == "0" -> digit.toString()
-        current.length >= MAX_LENGTH -> current
-        else -> current + digit
-    }
+    private fun appendDigit(
+        current: String,
+        digit: Char,
+    ): String =
+        when {
+            digit == '.' -> if (current.contains('.')) current else "$current."
+            current.contains('.') && current.substringAfter('.').length >= MAX_DECIMALS -> current
+            current == "0" -> digit.toString()
+            current.length >= MAX_LENGTH -> current
+            else -> current + digit
+        }
 
     private fun LocalDate.toTransactionTime(): Long {
         val zone = ZoneId.systemDefault()
@@ -123,26 +126,32 @@ class CaptureViewModel(
 internal fun CaptureUiState.withAccountDefaults(): CaptureUiState {
     val preferred = sourceAccountId ?: destinationAccountId
     val firstAsset = ownAccounts.firstOrNull { it.type == AccountType.ASSET } ?: ownAccounts.firstOrNull()
-    fun valid(id: String?, options: List<Account>) =
-        id?.takeIf { candidate -> options.any { it.id == candidate } }
+
+    fun valid(
+        id: String?,
+        options: List<Account>,
+    ) = id?.takeIf { candidate -> options.any { it.id == candidate } }
 
     return when (type) {
-        TransactionType.DEPOSIT -> copy(
-            sourceAccountId = null,
-            destinationAccountId = valid(destinationAccountId ?: preferred, ownAccounts) ?: firstAsset?.id,
-        )
+        TransactionType.DEPOSIT ->
+            copy(
+                sourceAccountId = null,
+                destinationAccountId = valid(destinationAccountId ?: preferred, ownAccounts) ?: firstAsset?.id,
+            )
         TransactionType.TRANSFER -> {
             val source = valid(preferred, sourceOptions) ?: sourceOptions.firstOrNull()?.id
             val withSource = copy(sourceAccountId = source)
             copy(
                 sourceAccountId = source,
-                destinationAccountId = valid(destinationAccountId, withSource.destinationOptions)
-                    ?: withSource.destinationOptions.firstOrNull()?.id,
+                destinationAccountId =
+                    valid(destinationAccountId, withSource.destinationOptions)
+                        ?: withSource.destinationOptions.firstOrNull()?.id,
             )
         }
-        else -> copy(
-            sourceAccountId = valid(preferred, ownAccounts) ?: firstAsset?.id,
-            destinationAccountId = null,
-        )
+        else ->
+            copy(
+                sourceAccountId = valid(preferred, ownAccounts) ?: firstAsset?.id,
+                destinationAccountId = null,
+            )
     }
 }

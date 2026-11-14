@@ -16,7 +16,7 @@ import app.lucent.firefly.core.database.model.SyncQueueStatus
     indices = [
         Index(value = ["createdAt"]),
         Index(value = ["entityType", "localEntityId"]),
-    ]
+    ],
 )
 data class SyncQueueEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

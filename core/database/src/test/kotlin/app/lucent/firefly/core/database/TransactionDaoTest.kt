@@ -11,8 +11,6 @@ import app.lucent.firefly.core.database.model.SyncStatus
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,16 +18,17 @@ import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class TransactionDaoTest {
-
     private lateinit var database: LucentDatabase
     private lateinit var transactionDao: TransactionDao
 
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        database = Room.inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
+        database =
+            Room
+                .inMemoryDatabaseBuilder(context, LucentDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
         transactionDao = database.transactionDao()
     }
 
@@ -39,41 +38,46 @@ class TransactionDaoTest {
     }
 
     @Test
-    fun observeTransactionsRetrievesGroupsWithSplits() = runTest {
-        val group = TransactionGroupEntity(
-            localId = "grp-1",
-            serverId = null,
-            groupTitle = "Coffee & Snack"
-        )
-        val split1 = createSplit(splitId = "split-1", groupId = "grp-1", amount = "4.50")
-        val split2 = createSplit(splitId = "split-2", groupId = "grp-1", amount = "3.00")
+    fun observeTransactionsRetrievesGroupsWithSplits() =
+        runTest {
+            val group =
+                TransactionGroupEntity(
+                    localId = "grp-1",
+                    serverId = null,
+                    groupTitle = "Coffee & Snack",
+                )
+            val split1 = createSplit(splitId = "split-1", groupId = "grp-1", amount = "4.50")
+            val split2 = createSplit(splitId = "split-2", groupId = "grp-1", amount = "3.00")
 
-        transactionDao.insertGroup(group)
-        transactionDao.insertSplits(listOf(split1, split2))
+            transactionDao.insertGroup(group)
+            transactionDao.insertSplits(listOf(split1, split2))
 
-        transactionDao.observeTransactions().test {
-            val transactions = awaitItem()
-            assertEquals(1, transactions.size)
-            assertEquals("grp-1", transactions[0].group.localId)
-            assertEquals(2, transactions[0].splits.size)
+            transactionDao.observeTransactions().test {
+                val transactions = awaitItem()
+                assertEquals(1, transactions.size)
+                assertEquals("grp-1", transactions[0].group.localId)
+                assertEquals(2, transactions[0].splits.size)
+            }
         }
-    }
 
     @Test
-    fun observeSplitsForAccountFiltersCorrectly() = runTest {
-        val group = TransactionGroupEntity(localId = "grp-1", serverId = null, groupTitle = null)
-        val splitAccountA = createSplit(splitId = "s1", groupId = "grp-1", sourceId = "acc-10", destinationId = "acc-20")
-        val splitAccountB = createSplit(splitId = "s2", groupId = "grp-1", sourceId = "acc-30", destinationId = "acc-40")
+    fun observeSplitsForAccountFiltersCorrectly() =
+        runTest {
+            val group = TransactionGroupEntity(localId = "grp-1", serverId = null, groupTitle = null)
+            val splitAccountA =
+                createSplit(splitId = "s1", groupId = "grp-1", sourceId = "acc-10", destinationId = "acc-20")
+            val splitAccountB =
+                createSplit(splitId = "s2", groupId = "grp-1", sourceId = "acc-30", destinationId = "acc-40")
 
-        transactionDao.insertGroup(group)
-        transactionDao.insertSplits(listOf(splitAccountA, splitAccountB))
+            transactionDao.insertGroup(group)
+            transactionDao.insertSplits(listOf(splitAccountA, splitAccountB))
 
-        transactionDao.observeSplitsForAccount(listOf("acc-10")).test {
-            val splits = awaitItem()
-            assertEquals(1, splits.size)
-            assertEquals("s1", splits[0].localSplitId)
+            transactionDao.observeSplitsForAccount(listOf("acc-10")).test {
+                val splits = awaitItem()
+                assertEquals(1, splits.size)
+                assertEquals("s1", splits[0].localSplitId)
+            }
         }
-    }
 
     private fun createSplit(
         splitId: String,
@@ -104,6 +108,6 @@ class TransactionDaoTest {
         notes = null,
         tags = listOf("food", "weekly"),
         syncStatus = status,
-        order = 0
+        order = 0,
     )
 }

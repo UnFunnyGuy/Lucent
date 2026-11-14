@@ -5,6 +5,5 @@ data class ServerCredentials(
     val token: String,
     val allowSelfSignedCert: Boolean = false,
 ) {
-    override fun toString(): String =
-        "ServerCredentials(baseUrl=$baseUrl, token=***, allowSelfSignedCert=$allowSelfSignedCert)"
+    override fun toString(): String = "ServerCredentials(baseUrl=$baseUrl, token=***, allowSelfSignedCert=$allowSelfSignedCert)"
 }

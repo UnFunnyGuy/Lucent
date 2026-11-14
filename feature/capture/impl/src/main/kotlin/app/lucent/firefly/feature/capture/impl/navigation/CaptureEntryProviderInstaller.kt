@@ -14,7 +14,6 @@ import org.koin.core.annotation.Singleton
 class CaptureEntryProviderInstaller(
     private val navigator: Navigator,
 ) : EntryProviderInstaller {
-
     @OptIn(ExperimentalMaterial3Api::class)
     override fun install(scope: EntryProviderScope<NavKey>) {
         scope.entry<CaptureNavKey>(metadata = BottomSheetSceneStrategy.bottomSheet(skipPartiallyExpanded = true)) {

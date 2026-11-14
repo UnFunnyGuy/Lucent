@@ -12,8 +12,9 @@ import androidx.compose.ui.res.stringResource
  */
 @Immutable
 sealed interface UiText {
-
-    data class DynamicString(val value: String) : UiText
+    data class DynamicString(
+        val value: String,
+    ) : UiText
 
     class StringResource(
         @param:StringRes val resId: Int,
@@ -34,18 +35,19 @@ sealed interface UiText {
 
     @Composable
     @ReadOnlyComposable
-    fun asString(): String = when (this) {
-        is DynamicString -> value
-        is StringResource -> stringResource(resId, *args)
-    }
+    fun asString(): String =
+        when (this) {
+            is DynamicString -> value
+            is StringResource -> stringResource(resId, *args)
+        }
 
-    fun asString(context: Context): String = when (this) {
-        is DynamicString -> value
-        is StringResource -> context.getString(resId, *args)
-    }
+    fun asString(context: Context): String =
+        when (this) {
+            is DynamicString -> value
+            is StringResource -> context.getString(resId, *args)
+        }
 }
 
 fun String.asUiText(): UiText = UiText.DynamicString(this)
 
-fun @receiver:StringRes Int.asUiText(vararg args: Any): UiText =
-    UiText.StringResource(this, arrayOf(*args))
+fun @receiver:StringRes Int.asUiText(vararg args: Any): UiText = UiText.StringResource(this, arrayOf(*args))

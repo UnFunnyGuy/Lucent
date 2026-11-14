@@ -10,7 +10,6 @@ import org.koin.plugin.module.dsl.startKoin
 
 @KoinApplication
 class LucentApplication : Application() {
-
     private val syncInitializer: SyncInitializer by inject()
 
     override fun onCreate() {

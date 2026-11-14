@@ -1,6 +1,5 @@
 package app.lucent.firefly.feature.onboarding.impl.presentation
 
-import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +35,7 @@ import app.lucent.firefly.core.ui.component.ScreenWrapper
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiAction
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiEvent
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiState
+import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -111,10 +111,11 @@ fun OnboardingScreen(
             placeholder = { Text("https://firefly.example.com") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Next,
-            ),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    imeAction = ImeAction.Next,
+                ),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -147,18 +148,19 @@ fun OnboardingScreen(
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    focusManager.clearFocus()
-                    onAction(OnboardingUiAction.Connect)
-                },
-            ),
+            keyboardOptions =
+                KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+            keyboardActions =
+                KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        onAction(OnboardingUiAction.Connect)
+                    },
+                ),
         )
-
 
         // Error message display
         if (state.errorMessage != null) {
@@ -196,9 +198,10 @@ fun OnboardingScreen(
 private fun OnboardingScreenPreview() {
     LucentTheme {
         OnboardingScreen(
-            state = OnboardingUiState(
-                serverUrl = "https://demo.firefly-iii.org",
-            ),
+            state =
+                OnboardingUiState(
+                    serverUrl = "https://demo.firefly-iii.org",
+                ),
             onAction = {},
         )
     }

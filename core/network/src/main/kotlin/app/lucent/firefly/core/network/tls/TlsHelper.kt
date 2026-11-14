@@ -14,23 +14,25 @@ import javax.net.ssl.X509TrustManager
  * or internal CA certificates commonly used in self-hosted Firefly III instances.
  */
 object TlsHelper {
-
     /**
      * Creates a combined [X509TrustManager] containing default system certificates
      * and an optional custom PEM-encoded certificate.
      */
     fun createTrustManager(customCertPem: String? = null): X509TrustManager {
-        val trustStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
-            load(null, null)
-        }
+        val trustStore =
+            KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+                load(null, null)
+            }
 
         // Load system default certificates
-        val defaultTmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply {
-            init(null as KeyStore?)
-        }
-        val defaultTrustManager = defaultTmf.trustManagers
-            .filterIsInstance<X509TrustManager>()
-            .firstOrNull()
+        val defaultTmf =
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply {
+                init(null as KeyStore?)
+            }
+        val defaultTrustManager =
+            defaultTmf.trustManagers
+                .filterIsInstance<X509TrustManager>()
+                .firstOrNull()
 
         defaultTrustManager?.acceptedIssuers?.forEachIndexed { index, cert ->
             trustStore.setCertificateEntry("system_$index", cert)
@@ -39,15 +41,17 @@ object TlsHelper {
         // Load custom certificate if present
         if (!customCertPem.isNullOrBlank()) {
             val certFactory = CertificateFactory.getInstance("X.509")
-            val cert = certFactory.generateCertificate(
-                ByteArrayInputStream(customCertPem.trimIndent().toByteArray())
-            ) as X509Certificate
+            val cert =
+                certFactory.generateCertificate(
+                    ByteArrayInputStream(customCertPem.trimIndent().toByteArray()),
+                ) as X509Certificate
             trustStore.setCertificateEntry("custom_homelab_ca", cert)
         }
 
-        val customTmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply {
-            init(trustStore)
-        }
+        val customTmf =
+            TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()).apply {
+                init(trustStore)
+            }
 
         return customTmf.trustManagers
             .filterIsInstance<X509TrustManager>()
@@ -58,9 +62,10 @@ object TlsHelper {
      * Builds an [SSLSocketFactory] using the provided [trustManager].
      */
     fun createSslSocketFactory(trustManager: X509TrustManager): SSLSocketFactory {
-        val sslContext = SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf(trustManager), null)
-        }
+        val sslContext =
+            SSLContext.getInstance("TLS").apply {
+                init(null, arrayOf(trustManager), null)
+            }
         return sslContext.socketFactory
     }
 }

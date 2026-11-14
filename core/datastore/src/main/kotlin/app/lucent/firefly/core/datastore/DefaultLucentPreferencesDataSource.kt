@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.map
 internal class DefaultLucentPreferencesDataSource(
     private val dataStore: DataStore<LucentPreferences>,
 ) : LucentPreferencesDataSource {
-
     override val preferences: Flow<LucentPreferences>
         get() = dataStore.data
 

@@ -27,7 +27,6 @@ class DefaultTransactionReconciler(
     private val clock: Clock,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : TransactionReconciler {
-
     override suspend fun syncRecentTransactions(): Result<Unit> {
         val today = LocalDate.now(clock)
         return reconcileWindow(start = today.minusMonths(1).withDayOfMonth(1), end = today)
@@ -46,40 +45,49 @@ class DefaultTransactionReconciler(
      * Each page is written in its own short database transaction so a long reconcile does not hold
      * the write lock against new local edits; upserts are idempotent, so stopping part-way is safe.
      */
-    private suspend fun reconcileWindow(start: LocalDate, end: LocalDate): Result<Unit> = withContext(ioDispatcher) {
-        val remoteIds = mutableSetOf<String>()
-        var page = 1
-        while (true) {
-            when (val result = remoteDataSource.getTransactions(start = start, end = end, page = page)) {
-                is Result.Success -> {
-                    val groups = result.data.data
-                    database.withTransaction { groups.forEach { remoteWriter.upsert(it) } }
-                    groups.mapTo(remoteIds) { it.id }
-                    if (!result.data.meta.hasNextPage) break
-                    page++
-                }
-                is Result.Error -> return@withContext result
-            }
-        }
-
-        // The server filters by its own time zone; only prune well inside the window so a
-        // transaction near the edges is never deleted and re-added on alternate runs.
-        val zone = clock.zone
-        val pruneFrom = start.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-        val pruneUntil = end.atStartOfDay(zone).toInstant().toEpochMilli() - 1
-        if (pruneFrom <= pruneUntil) {
-            database.withTransaction {
-                transactionDao.getGroupsInDateRange(pruneFrom, pruneUntil)
-                    .filter { local ->
-                        val serverId = local.group.serverId
-                        serverId != null &&
-                            serverId !in remoteIds &&
-                            local.splits.all { it.syncStatus == SyncStatus.SYNCED } &&
-                            syncQueueDao.getForEntity(SyncEntityType.TRANSACTION, local.group.localId).isEmpty()
+    private suspend fun reconcileWindow(
+        start: LocalDate,
+        end: LocalDate,
+    ): Result<Unit> =
+        withContext(ioDispatcher) {
+            val remoteIds = mutableSetOf<String>()
+            var page = 1
+            while (true) {
+                when (val result = remoteDataSource.getTransactions(start = start, end = end, page = page)) {
+                    is Result.Success -> {
+                        val groups = result.data.data
+                        database.withTransaction { groups.forEach { remoteWriter.upsert(it) } }
+                        groups.mapTo(remoteIds) { it.id }
+                        if (!result.data.meta.hasNextPage) break
+                        page++
                     }
-                    .forEach { transactionDao.deleteGroup(it.group.localId) }
+                    is Result.Error -> return@withContext result
+                }
             }
+
+            // The server filters by its own time zone; only prune well inside the window so a
+            // transaction near the edges is never deleted and re-added on alternate runs.
+            val zone = clock.zone
+            val pruneFrom =
+                start
+                    .plusDays(1)
+                    .atStartOfDay(zone)
+                    .toInstant()
+                    .toEpochMilli()
+            val pruneUntil = end.atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            if (pruneFrom <= pruneUntil) {
+                database.withTransaction {
+                    transactionDao
+                        .getGroupsInDateRange(pruneFrom, pruneUntil)
+                        .filter { local ->
+                            val serverId = local.group.serverId
+                            serverId != null &&
+                                serverId !in remoteIds &&
+                                local.splits.all { it.syncStatus == SyncStatus.SYNCED } &&
+                                syncQueueDao.getForEntity(SyncEntityType.TRANSACTION, local.group.localId).isEmpty()
+                        }.forEach { transactionDao.deleteGroup(it.group.localId) }
+                }
+            }
+            Result.Success(Unit)
         }
-        Result.Success(Unit)
-    }
 }

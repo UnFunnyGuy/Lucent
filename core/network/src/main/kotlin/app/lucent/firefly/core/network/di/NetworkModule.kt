@@ -11,7 +11,6 @@ import org.koin.core.annotation.Singleton
 @Configuration
 @ComponentScan("app.lucent.firefly.core.network")
 class NetworkModule {
-
     @Singleton
     fun provideJson(): Json = FireflyJson
 }

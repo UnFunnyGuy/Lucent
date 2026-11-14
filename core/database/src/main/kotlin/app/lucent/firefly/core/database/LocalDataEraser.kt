@@ -15,8 +15,8 @@ class RoomLocalDataEraser(
     private val database: LucentDatabase,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : LocalDataEraser {
-
-    override suspend fun eraseAll() = withContext(ioDispatcher) {
-        database.clearAllTables()
-    }
+    override suspend fun eraseAll() =
+        withContext(ioDispatcher) {
+            database.clearAllTables()
+        }
 }

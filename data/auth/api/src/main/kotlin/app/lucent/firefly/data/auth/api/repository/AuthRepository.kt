@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
  * Public domain contract for server discovery, authentication, and session management.
  */
 interface AuthRepository {
-
     /**
      * Continuous reactive stream of the currently active authentication session.
      * Emits `null` if the app is unauthenticated or credentials have been cleared.

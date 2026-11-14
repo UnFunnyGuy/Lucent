@@ -9,15 +9,18 @@ import java.time.ZoneId
 sealed interface TransactionListItem {
     val key: String
 
-    data class DayHeader(val date: LocalDate) : TransactionListItem {
+    data class DayHeader(
+        val date: LocalDate,
+    ) : TransactionListItem {
         override val key: String = "day-$date"
     }
 
-    data class Entry(val transaction: Transaction) : TransactionListItem {
+    data class Entry(
+        val transaction: Transaction,
+    ) : TransactionListItem {
         override val key: String = transaction.id
         val date: LocalDate = transaction.localDate()
     }
 }
 
-internal fun Transaction.localDate(zone: ZoneId = ZoneId.systemDefault()): LocalDate =
-    Instant.ofEpochMilli(splits.firstOrNull()?.date ?: createdAt).atZone(zone).toLocalDate()
+internal fun Transaction.localDate(zone: ZoneId = ZoneId.systemDefault()): LocalDate = Instant.ofEpochMilli(splits.firstOrNull()?.date ?: createdAt).atZone(zone).toLocalDate()

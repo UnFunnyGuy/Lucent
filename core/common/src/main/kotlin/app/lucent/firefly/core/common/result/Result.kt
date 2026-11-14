@@ -4,10 +4,13 @@ package app.lucent.firefly.core.common.result
  * Monadic result type representing either [Success] with data or [Error] with [AppError].
  */
 sealed interface Result<out T> {
+    data class Success<out T>(
+        val data: T,
+    ) : Result<T>
 
-    data class Success<out T>(val data: T) : Result<T>
-
-    data class Error(val error: AppError) : Result<Nothing>
+    data class Error(
+        val error: AppError,
+    ) : Result<Nothing>
 
     companion object {
         val empty: Result<Unit> = Success(Unit)

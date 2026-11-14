@@ -14,7 +14,6 @@ import org.koin.core.annotation.Singleton
 class DefaultAuthRemoteDataSource(
     private val clientProvider: FireflyClientProvider,
 ) : AuthRemoteDataSource {
-
     override suspend fun getAbout(credentials: ServerCredentials): Result<SystemInfoDto> =
         clientProvider.forServer(credentials).use { client ->
             safeApiCall { client.get(ApiVersion.V1("about")) }

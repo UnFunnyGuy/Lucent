@@ -24,7 +24,6 @@ import org.junit.Test
 import androidx.work.ListenableWorker.Result as WorkResult
 
 class SyncQueueWorkerTest {
-
     private val processor: SyncQueueProcessor = mockk()
     private val authRepository: AuthRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
@@ -33,59 +32,65 @@ class SyncQueueWorkerTest {
     private val activeSessionFlow = MutableStateFlow<AuthSession?>(null)
     private lateinit var worker: SyncQueueWorker
 
-    private val session = AuthSession(
-        serverConfig = ServerConfig(baseUrl = "https://demo.firefly.org"),
-        user = AuthUser(id = "user-1", email = "test@example.com", role = "owner"),
-        token = "pat",
-    )
+    private val session =
+        AuthSession(
+            serverConfig = ServerConfig(baseUrl = "https://demo.firefly.org"),
+            user = AuthUser(id = "user-1", email = "test@example.com", role = "owner"),
+            token = "pat",
+        )
 
     @Before
     fun setup() {
         every { authRepository.activeSession } returns activeSessionFlow
         coEvery { accountRepository.refreshAccounts() } returns Result.Success(emptyList())
-        worker = SyncQueueWorker(
-            appContext = mockk<Context>(relaxed = true),
-            workerParams = mockk<WorkerParameters>(relaxed = true),
-            processor = processor,
-            authRepository = authRepository,
-            accountRepository = accountRepository,
-            syncMetadataDao = syncMetadataDao,
-            ioDispatcher = testDispatcher,
-        )
+        worker =
+            SyncQueueWorker(
+                appContext = mockk<Context>(relaxed = true),
+                workerParams = mockk<WorkerParameters>(relaxed = true),
+                processor = processor,
+                authRepository = authRepository,
+                accountRepository = accountRepository,
+                syncMetadataDao = syncMetadataDao,
+                ioDispatcher = testDispatcher,
+            )
     }
 
     @Test
-    fun succeedsWithoutWorkWhenSignedOut() = runTest(testDispatcher) {
-        assertEquals(WorkResult.success(), worker.doWork())
-        coVerify(exactly = 0) { processor.drain() }
-    }
+    fun succeedsWithoutWorkWhenSignedOut() =
+        runTest(testDispatcher) {
+            assertEquals(WorkResult.success(), worker.doWork())
+            coVerify(exactly = 0) { processor.drain() }
+        }
 
     @Test
-    fun refreshesAccountsAfterPushingChanges() = runTest(testDispatcher) {
-        activeSessionFlow.value = session
-        coEvery { processor.drain() } returns DrainResult(pushedAny = true, shouldRetry = false)
+    fun refreshesAccountsAfterPushingChanges() =
+        runTest(testDispatcher) {
+            activeSessionFlow.value = session
+            coEvery { processor.drain() } returns DrainResult(pushedAny = true, shouldRetry = false)
 
-        assertEquals(WorkResult.success(), worker.doWork())
-        coVerify { accountRepository.refreshAccounts() }
-        coVerify { syncMetadataDao.markSynced(any(), deep = false) }
-    }
-
-    @Test
-    fun authenticationFailureDoesNotRetryOrRecordASuccessfulSync() = runTest(testDispatcher) {
-        activeSessionFlow.value = session
-        coEvery { processor.drain() } returns
-            DrainResult(pushedAny = false, shouldRetry = false, authenticationFailed = true)
-
-        assertEquals(WorkResult.success(), worker.doWork())
-        coVerify(exactly = 0) { syncMetadataDao.markSynced(any(), any()) }
-    }
+            assertEquals(WorkResult.success(), worker.doWork())
+            coVerify { accountRepository.refreshAccounts() }
+            coVerify { syncMetadataDao.markSynced(any(), deep = false) }
+        }
 
     @Test
-    fun retriesWhenProcessorAsksForRetry() = runTest(testDispatcher) {
-        activeSessionFlow.value = session
-        coEvery { processor.drain() } returns DrainResult(pushedAny = false, shouldRetry = true)
+    fun authenticationFailureDoesNotRetryOrRecordASuccessfulSync() =
+        runTest(testDispatcher) {
+            activeSessionFlow.value = session
+            coEvery { processor.drain() } returns
+                DrainResult(pushedAny = false, shouldRetry = false, authenticationFailed = true)
 
-        assertEquals(WorkResult.retry(), worker.doWork())
-        coVerify(exactly = 0) { accountRepository.refreshAccounts() }
-    }
+            assertEquals(WorkResult.success(), worker.doWork())
+            coVerify(exactly = 0) { syncMetadataDao.markSynced(any(), any()) }
+        }
+
+    @Test
+    fun retriesWhenProcessorAsksForRetry() =
+        runTest(testDispatcher) {
+            activeSessionFlow.value = session
+            coEvery { processor.drain() } returns DrainResult(pushedAny = false, shouldRetry = true)
+
+            assertEquals(WorkResult.retry(), worker.doWork())
+            coVerify(exactly = 0) { accountRepository.refreshAccounts() }
+        }
 }

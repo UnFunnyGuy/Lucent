@@ -12,6 +12,5 @@ import org.koin.core.annotation.Factory
 class LogoutUseCase(
     private val authRepository: AuthRepository,
 ) : NoParamsUseCase<Result<Unit>> {
-
     override suspend fun perform(): Result<Unit> = authRepository.logout()
 }

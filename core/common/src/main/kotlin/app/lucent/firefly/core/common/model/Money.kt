@@ -14,7 +14,6 @@ data class Money(
     val amount: BigDecimal,
     val currency: Currency,
 ) : Comparable<Money> {
-
     operator fun plus(other: Money): Money {
         require(currency.code == other.currency.code) {
             "Cannot add currencies with mismatched codes: ${currency.code} and ${other.currency.code}"
@@ -46,10 +45,12 @@ data class Money(
     }
 
     companion object {
-        fun zero(currency: Currency): Money =
-            Money(BigDecimal.ZERO.setScale(currency.decimalPlaces, RoundingMode.HALF_UP), currency)
+        fun zero(currency: Currency): Money = Money(BigDecimal.ZERO.setScale(currency.decimalPlaces, RoundingMode.HALF_UP), currency)
 
-        fun of(amountStr: String, currency: Currency): Money {
+        fun of(
+            amountStr: String,
+            currency: Currency,
+        ): Money {
             val parsed = amountStr.toBigDecimalOrNull() ?: BigDecimal.ZERO
             return Money(parsed.setScale(currency.decimalPlaces, RoundingMode.HALF_UP), currency)
         }

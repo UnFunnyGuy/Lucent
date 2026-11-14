@@ -37,12 +37,13 @@ fun FinancialKeypad(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        val rows = listOf(
-            listOf('1', '2', '3'),
-            listOf('4', '5', '6'),
-            listOf('7', '8', '9'),
-            listOf('.', '0', '⌫'),
-        )
+        val rows =
+            listOf(
+                listOf('1', '2', '3'),
+                listOf('4', '5', '6'),
+                listOf('7', '8', '9'),
+                listOf('.', '0', '⌫'),
+            )
 
         rows.forEach { row ->
             Row(
@@ -51,18 +52,19 @@ fun FinancialKeypad(
             ) {
                 row.forEach { char ->
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(56.dp)
-                            .clip(buttonShape)
-                            .background(LucentTheme.colors.surfaceVariant.copy(alpha = 0.6f))
-                            .clickable {
-                                if (char == '⌫') {
-                                    onBackspaceClick()
-                                } else {
-                                    onDigitClick(char)
-                                }
-                            },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .clip(buttonShape)
+                                .background(LucentTheme.colors.surfaceVariant.copy(alpha = 0.6f))
+                                .clickable {
+                                    if (char == '⌫') {
+                                        onBackspaceClick()
+                                    } else {
+                                        onDigitClick(char)
+                                    }
+                                },
                         contentAlignment = Alignment.Center,
                     ) {
                         if (char == '⌫') {

@@ -11,8 +11,8 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.UUID
 
-fun AccountReadDto.toEntity(existingLocalId: String? = null): AccountEntity {
-    return AccountEntity(
+fun AccountReadDto.toEntity(existingLocalId: String? = null): AccountEntity =
+    AccountEntity(
         localId = existingLocalId ?: UUID.randomUUID().toString(),
         serverId = id,
         name = attributes.name,
@@ -32,40 +32,43 @@ fun AccountReadDto.toEntity(existingLocalId: String? = null): AccountEntity {
         syncStatus = SyncStatus.SYNCED,
         updatedAt = System.currentTimeMillis(),
     )
-}
 
 fun AccountEntity.toDomain(pendingDeltaAmount: BigDecimal = BigDecimal.ZERO): Account {
-    val currency = Currency(
-        id = currencyId,
-        code = currencyCode,
-        symbol = currencySymbol,
-        decimalPlaces = currencyDecimalPlaces,
-    )
-    val primaryCurrency = primaryCurrencyCode?.let { code ->
+    val currency =
         Currency(
-            code = code,
-            symbol = primaryCurrencySymbol ?: code,
-            decimalPlaces = primaryCurrencyDecimalPlaces ?: 2,
+            id = currencyId,
+            code = currencyCode,
+            symbol = currencySymbol,
+            decimalPlaces = currencyDecimalPlaces,
         )
-    }
+    val primaryCurrency =
+        primaryCurrencyCode?.let { code ->
+            Currency(
+                code = code,
+                symbol = primaryCurrencySymbol ?: code,
+                decimalPlaces = primaryCurrencyDecimalPlaces ?: 2,
+            )
+        }
     return Account(
         id = localId,
         serverId = serverId,
         name = name,
         type = AccountType.fromString(type),
         balance = Money.of(currentBalance, currency),
-        pendingDelta = Money(
-            pendingDeltaAmount.setScale(currency.decimalPlaces, RoundingMode.HALF_UP),
-            currency
-        ),
+        pendingDelta =
+            Money(
+                pendingDeltaAmount.setScale(currency.decimalPlaces, RoundingMode.HALF_UP),
+                currency,
+            ),
         currency = currency,
         active = active,
         order = order ?: 0,
         updatedAt = updatedAt,
         includeInNetWorth = includeNetWorth,
         primaryCurrency = primaryCurrency,
-        primaryCurrencyBalance = primaryCurrency?.let { currency ->
-            primaryCurrencyBalance?.let { Money.of(it, currency) }
-        },
+        primaryCurrencyBalance =
+            primaryCurrency?.let { currency ->
+                primaryCurrencyBalance?.let { Money.of(it, currency) }
+            },
     )
 }

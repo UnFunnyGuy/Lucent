@@ -22,67 +22,70 @@ class AuthRepositoryImpl(
     private val localDataSource: AuthLocalDataSource,
     private val localDataEraser: LocalDataEraser,
 ) : AuthRepository {
-
     override val activeSession: Flow<AuthSession?> = localDataSource.activeSession
 
     override suspend fun validateServer(
         baseUrl: String,
         token: String?,
         allowSelfSignedCert: Boolean,
-    ): Result<ServerInfo> = safeTryFlat {
-        if (token.isNullOrBlank()) return@safeTryFlat Result.error(AppError.ApiKeyError)
-        val credentials = ServerCredentials(normalizeUrl(baseUrl), token, allowSelfSignedCert)
-        when (val result = remoteDataSource.getAbout(credentials)) {
-            is Result.Success -> Result.success(result.data.toDomain())
-            is Result.Error -> Result.error(result.error)
+    ): Result<ServerInfo> =
+        safeTryFlat {
+            if (token.isNullOrBlank()) return@safeTryFlat Result.error(AppError.ApiKeyError)
+            val credentials = ServerCredentials(normalizeUrl(baseUrl), token, allowSelfSignedCert)
+            when (val result = remoteDataSource.getAbout(credentials)) {
+                is Result.Success -> Result.success(result.data.toDomain())
+                is Result.Error -> Result.error(result.error)
+            }
         }
-    }
 
     override suspend fun authenticate(
         baseUrl: String,
         token: String,
         allowSelfSignedCert: Boolean,
-    ): Result<AuthSession> = safeTryFlat {
-        val cleanUrl = normalizeUrl(baseUrl)
-        when (val result = remoteDataSource.getCurrentUser(ServerCredentials(cleanUrl, token, allowSelfSignedCert))) {
-            is Result.Success -> {
-                val user = result.data.toDomain()
-                if (user.isBlocked) {
-                    return@safeTryFlat Result.error(
-                        AppError.Common("This account is blocked on the Firefly III server."),
+    ): Result<AuthSession> =
+        safeTryFlat {
+            val cleanUrl = normalizeUrl(baseUrl)
+            when (val result = remoteDataSource.getCurrentUser(ServerCredentials(cleanUrl, token, allowSelfSignedCert))) {
+                is Result.Success -> {
+                    val user = result.data.toDomain()
+                    if (user.isBlocked) {
+                        return@safeTryFlat Result.error(
+                            AppError.Common("This account is blocked on the Firefly III server."),
+                        )
+                    }
+
+                    // The same user on the same server keeps local data and unsent changes; anything else
+                    // would mix two accounts' data, so it starts from an empty database.
+                    if (!localDataSource.isCurrentAccount(cleanUrl, user.id)) {
+                        localDataEraser.eraseAll()
+                    }
+                    localDataSource.saveSession(
+                        baseUrl = cleanUrl,
+                        token = token,
+                        user = user,
+                        allowSelfSignedCert = allowSelfSignedCert,
+                    )
+
+                    Result.success(
+                        AuthSession(
+                            serverConfig =
+                                ServerConfig(
+                                    baseUrl = cleanUrl,
+                                    allowSelfSignedCert = allowSelfSignedCert,
+                                ),
+                            user = user,
+                            token = token,
+                        ),
                     )
                 }
-
-                // The same user on the same server keeps local data and unsent changes; anything else
-                // would mix two accounts' data, so it starts from an empty database.
-                if (!localDataSource.isCurrentAccount(cleanUrl, user.id)) {
-                    localDataEraser.eraseAll()
-                }
-                localDataSource.saveSession(
-                    baseUrl = cleanUrl,
-                    token = token,
-                    user = user,
-                    allowSelfSignedCert = allowSelfSignedCert,
-                )
-
-                Result.success(
-                    AuthSession(
-                        serverConfig = ServerConfig(
-                            baseUrl = cleanUrl,
-                            allowSelfSignedCert = allowSelfSignedCert,
-                        ),
-                        user = user,
-                        token = token,
-                    ),
-                )
+                is Result.Error -> Result.error(result.error)
             }
-            is Result.Error -> Result.error(result.error)
         }
-    }
 
-    override suspend fun logout(): Result<Unit> = safeTry {
-        localDataSource.clearActiveSession()
-    }
+    override suspend fun logout(): Result<Unit> =
+        safeTry {
+            localDataSource.clearActiveSession()
+        }
 
     private fun normalizeUrl(url: String): String {
         var clean = url.trim().trimEnd('/')

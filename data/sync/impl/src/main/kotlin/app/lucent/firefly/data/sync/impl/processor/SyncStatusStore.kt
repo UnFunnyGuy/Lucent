@@ -7,8 +7,7 @@ import org.koin.core.annotation.Singleton
 
 /** Process-wide sync flags that do not belong in the database. */
 @Singleton
-class SyncStatusStore() {
-
+class SyncStatusStore {
     private val reauthenticationRequired = MutableStateFlow(false)
     val requiresReauthentication: StateFlow<Boolean> = reauthenticationRequired.asStateFlow()
 

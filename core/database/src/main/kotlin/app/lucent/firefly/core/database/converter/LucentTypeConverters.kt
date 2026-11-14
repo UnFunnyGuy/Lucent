@@ -9,7 +9,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class LucentTypeConverters {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     @TypeConverter
@@ -40,7 +39,8 @@ class LucentTypeConverters {
     fun fromStringList(list: List<String>): String = json.encodeToString(list)
 
     @TypeConverter
-    fun toStringList(value: String): List<String> = runCatching {
-        json.decodeFromString<List<String>>(value)
-    }.getOrDefault(emptyList())
+    fun toStringList(value: String): List<String> =
+        runCatching {
+            json.decodeFromString<List<String>>(value)
+        }.getOrDefault(emptyList())
 }

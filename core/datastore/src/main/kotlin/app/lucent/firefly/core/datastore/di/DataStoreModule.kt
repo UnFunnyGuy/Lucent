@@ -14,17 +14,16 @@ import app.lucent.firefly.core.datastore.serializer.LucentPreferencesSerializer
 import app.lucent.firefly.core.datastore.serializer.TinkAeadProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import java.io.File
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Singleton
+import java.io.File
 
 @Module
 @Configuration
 @ComponentScan("app.lucent.firefly.core.datastore")
 class DataStoreModule {
-
     /**
      * Provides the encrypted `DataStore<LucentPreferences>` singleton.
      *
@@ -44,15 +43,17 @@ class DataStoreModule {
         tinkAeadProvider: TinkAeadProvider,
     ): DataStore<LucentPreferences> {
         val aead = tinkAeadProvider.getAead()
-        val encryptedSerializer = AeadSerializer(
-            aead = aead,
-            wrappedSerializer = LucentPreferencesSerializer,
-        )
+        val encryptedSerializer =
+            AeadSerializer(
+                aead = aead,
+                wrappedSerializer = LucentPreferencesSerializer,
+            )
         return DataStoreFactory.create(
             serializer = encryptedSerializer,
-            corruptionHandler = ReplaceFileCorruptionHandler {
-                LucentPreferences()
-            },
+            corruptionHandler =
+                ReplaceFileCorruptionHandler {
+                    LucentPreferences()
+                },
             scope = CoroutineScope(appScope.coroutineContext + ioDispatcher),
             produceFile = {
                 File(context.filesDir, "datastore/lucent_prefs.pb")
@@ -68,8 +69,5 @@ class DataStoreModule {
      * internally via the scope provided to [provideDataStore].
      */
     @Singleton
-    fun provideLucentPreferencesDataSource(
-        dataStore: DataStore<LucentPreferences>,
-    ): LucentPreferencesDataSource =
-        DefaultLucentPreferencesDataSource(dataStore)
+    fun provideLucentPreferencesDataSource(dataStore: DataStore<LucentPreferences>): LucentPreferencesDataSource = DefaultLucentPreferencesDataSource(dataStore)
 }

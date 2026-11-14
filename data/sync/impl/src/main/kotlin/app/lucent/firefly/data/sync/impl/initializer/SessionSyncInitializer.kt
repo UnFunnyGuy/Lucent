@@ -9,8 +9,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 import org.koin.core.annotation.Singleton
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * While a profile is signed in, periodic sync is scheduled and a sync runs once at start-up
@@ -23,7 +23,6 @@ class SessionSyncInitializer(
     private val statusStore: SyncStatusStore,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) : SyncInitializer {
-
     private val started = AtomicBoolean(false)
 
     override fun initialize() {

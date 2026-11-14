@@ -4,7 +4,7 @@ import androidx.room.Entity
 
 @Entity(
     tableName = "remote_keys",
-    primaryKeys = ["entityType", "entityId"]
+    primaryKeys = ["entityType", "entityId"],
 )
 data class RemoteKeyEntity(
     val entityType: String,

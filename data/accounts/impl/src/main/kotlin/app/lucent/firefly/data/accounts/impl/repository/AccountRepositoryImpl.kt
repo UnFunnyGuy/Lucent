@@ -15,7 +15,6 @@ import app.lucent.firefly.data.accounts.impl.datasource.AccountRemoteDataSource
 import app.lucent.firefly.data.accounts.impl.dto.AccountReadDto
 import app.lucent.firefly.data.accounts.impl.mapper.toDomain
 import app.lucent.firefly.data.accounts.impl.mapper.toEntity
-import java.math.BigDecimal
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +25,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Singleton
+import java.math.BigDecimal
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
@@ -35,23 +35,22 @@ class AccountRepositoryImpl(
     private val remoteDataSource: AccountRemoteDataSource,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : AccountRepository {
+    override fun observeAccounts(): Flow<List<Account>> = withPendingDeltas(accountDao.observeAccounts()).flowOn(ioDispatcher)
 
-    override fun observeAccounts(): Flow<List<Account>> =
-        withPendingDeltas(accountDao.observeAccounts()).flowOn(ioDispatcher)
-
-    override fun observeActiveAccounts(): Flow<List<Account>> =
-        withPendingDeltas(accountDao.observeActiveAccounts()).flowOn(ioDispatcher)
+    override fun observeActiveAccounts(): Flow<List<Account>> = withPendingDeltas(accountDao.observeActiveAccounts()).flowOn(ioDispatcher)
 
     override fun observeAccount(id: String): Flow<Account?> =
-        accountDao.observeAccount(id).flatMapLatest { entity ->
-            if (entity == null) {
-                flowOf(null)
-            } else {
-                transactionDao.observeUnsyncedSplits().map { splits ->
-                    entity.toDomain(computePendingDeltas(listOf(entity), splits)[entity.localId] ?: BigDecimal.ZERO)
+        accountDao
+            .observeAccount(id)
+            .flatMapLatest { entity ->
+                if (entity == null) {
+                    flowOf(null)
+                } else {
+                    transactionDao.observeUnsyncedSplits().map { splits ->
+                        entity.toDomain(computePendingDeltas(listOf(entity), splits)[entity.localId] ?: BigDecimal.ZERO)
+                    }
                 }
-            }
-        }.flowOn(ioDispatcher)
+            }.flowOn(ioDispatcher)
 
     private fun withPendingDeltas(accounts: Flow<List<AccountEntity>>): Flow<List<Account>> =
         combine(accounts, transactionDao.observeUnsyncedSplits()) { entities, splits ->
@@ -59,27 +58,32 @@ class AccountRepositoryImpl(
             entities.map { it.toDomain(deltas[it.localId] ?: BigDecimal.ZERO) }
         }
 
-    override suspend fun refreshAccounts(): Result<List<Account>> = withContext(ioDispatcher) {
-        val dtos = mutableListOf<AccountReadDto>()
-        for (type in SYNCED_ACCOUNT_TYPES) {
-            when (val result = fetchAllPages(type)) {
-                is Result.Success -> dtos += result.data
-                is Result.Error -> return@withContext result
+    override suspend fun refreshAccounts(): Result<List<Account>> =
+        withContext(ioDispatcher) {
+            val dtos = mutableListOf<AccountReadDto>()
+            for (type in SYNCED_ACCOUNT_TYPES) {
+                when (val result = fetchAllPages(type)) {
+                    is Result.Success -> dtos += result.data
+                    is Result.Error -> return@withContext result
+                }
             }
+
+            val localAccounts = accountDao.getAccounts()
+            val localIdByServerId =
+                localAccounts
+                    .mapNotNull { account ->
+                        account.serverId?.let { it to account.localId }
+                    }.toMap()
+            val entities = dtos.map { dto -> dto.toEntity(localIdByServerId[dto.id]) }
+            val remoteIds = dtos.mapTo(mutableSetOf()) { it.id }
+
+            accountDao.insertOrReplace(entities)
+            localAccounts
+                .filter { it.syncStatus == SyncStatus.SYNCED && it.serverId !in remoteIds }
+                .forEach { accountDao.deleteByLocalId(it.localId) }
+
+            Result.Success(entities.map { it.toDomain() })
         }
-
-        val localAccounts = accountDao.getAccounts()
-        val localIdByServerId = localAccounts.mapNotNull { account -> account.serverId?.let { it to account.localId } }.toMap()
-        val entities = dtos.map { dto -> dto.toEntity(localIdByServerId[dto.id]) }
-        val remoteIds = dtos.mapTo(mutableSetOf()) { it.id }
-
-        accountDao.insertOrReplace(entities)
-        localAccounts
-            .filter { it.syncStatus == SyncStatus.SYNCED && it.serverId !in remoteIds }
-            .forEach { accountDao.deleteByLocalId(it.localId) }
-
-        Result.Success(entities.map { it.toDomain() })
-    }
 
     private suspend fun fetchAllPages(type: String): Result<List<AccountReadDto>> {
         val accounts = mutableListOf<AccountReadDto>()
@@ -96,14 +100,15 @@ class AccountRepositoryImpl(
         }
     }
 
-    override suspend fun getAccount(id: String): Result<Account> = withContext(ioDispatcher) {
-        val entity = accountDao.getAccountByLocalId(id)
-        if (entity != null) {
-            Result.Success(entity.toDomain())
-        } else {
-            Result.Error(AppError.Common("Account not found with ID: $id"))
+    override suspend fun getAccount(id: String): Result<Account> =
+        withContext(ioDispatcher) {
+            val entity = accountDao.getAccountByLocalId(id)
+            if (entity != null) {
+                Result.Success(entity.toDomain())
+            } else {
+                Result.Error(AppError.Common("Account not found with ID: $id"))
+            }
         }
-    }
 
     private companion object {
         /** Accounts the user owns; expense and revenue accounts are counterparties, not balances. */

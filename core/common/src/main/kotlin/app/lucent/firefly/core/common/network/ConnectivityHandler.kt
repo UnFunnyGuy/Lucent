@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.StateFlow
  * Exposes device network connectivity as an observable [StateFlow] and synchronous snapshot.
  */
 interface ConnectivityHandler {
-
     /** Hot flow of connectivity status. */
     val isConnected: StateFlow<Boolean>
 

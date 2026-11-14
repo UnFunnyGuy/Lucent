@@ -16,12 +16,12 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
+
 /**
  * Unit tests for [DefaultLucentPreferencesDataSource].
  *
@@ -30,7 +30,6 @@ import java.io.File
  * All reactive Flow assertions use Turbine.
  */
 class LucentPreferencesDataSourceTest {
-
     @get:Rule
     val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
 
@@ -45,14 +44,16 @@ class LucentPreferencesDataSourceTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        dataStore = DataStoreFactory.create(
-            serializer = LucentPreferencesSerializer,
-            scope = testScope,
-            produceFile = { buildDataStoreFile("lucent_prefs_test.pb") },
-        )
-        dataSource = DefaultLucentPreferencesDataSource(
-            dataStore = dataStore,
-        )
+        dataStore =
+            DataStoreFactory.create(
+                serializer = LucentPreferencesSerializer,
+                scope = testScope,
+                produceFile = { buildDataStoreFile("lucent_prefs_test.pb") },
+            )
+        dataSource =
+            DefaultLucentPreferencesDataSource(
+                dataStore = dataStore,
+            )
     }
 
     @After
@@ -61,105 +62,115 @@ class LucentPreferencesDataSourceTest {
     }
 
     @Test
-    fun `preferences emits default values on first run`() = runTest {
-        dataSource.preferences.test {
-            assertEquals(LucentPreferences(), awaitItem())
-            cancelAndIgnoreRemainingEvents()
+    fun `preferences emits default values on first run`() =
+        runTest {
+            dataSource.preferences.test {
+                assertEquals(LucentPreferences(), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `connection is null before the first sign-in`() = runTest {
-        dataSource.connection.test {
-            assertNull(awaitItem())
-            cancelAndIgnoreRemainingEvents()
+    fun `connection is null before the first sign-in`() =
+        runTest {
+            dataSource.connection.test {
+                assertNull(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `saveConnection replaces the stored connection`() = runTest {
-        dataSource.saveConnection(testConnection("a"))
-        dataSource.saveConnection(testConnection("b"))
+    fun `saveConnection replaces the stored connection`() =
+        runTest {
+            dataSource.saveConnection(testConnection("a"))
+            dataSource.saveConnection(testConnection("b"))
 
-        dataSource.connection.test {
-            assertEquals(testConnection("b"), awaitItem())
-            cancelAndIgnoreRemainingEvents()
+            dataSource.connection.test {
+                assertEquals(testConnection("b"), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `clearToken removes only the token`() = runTest {
-        dataSource.saveConnection(testConnection("a"))
-        dataSource.updateThemeMode(ThemeMode.DARK)
+    fun `clearToken removes only the token`() =
+        runTest {
+            dataSource.saveConnection(testConnection("a"))
+            dataSource.updateThemeMode(ThemeMode.DARK)
 
-        dataSource.clearToken()
+            dataSource.clearToken()
 
-        dataSource.preferences.test {
-            val prefs = awaitItem()
-            assertEquals(testConnection("a").copy(encryptedPat = ""), prefs.connection)
-            assertEquals(ThemeMode.DARK, prefs.themeMode)
-            cancelAndIgnoreRemainingEvents()
+            dataSource.preferences.test {
+                val prefs = awaitItem()
+                assertEquals(testConnection("a").copy(encryptedPat = ""), prefs.connection)
+                assertEquals(ThemeMode.DARK, prefs.themeMode)
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `clearToken without a connection is a no-op`() = runTest {
-        dataSource.clearToken()
+    fun `clearToken without a connection is a no-op`() =
+        runTest {
+            dataSource.clearToken()
 
-        dataSource.connection.test {
-            assertNull(awaitItem())
-            cancelAndIgnoreRemainingEvents()
+            dataSource.connection.test {
+                assertNull(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `updateThemeMode persists new theme`() = runTest {
-        dataSource.updateThemeMode(ThemeMode.DARK)
+    fun `updateThemeMode persists new theme`() =
+        runTest {
+            dataSource.updateThemeMode(ThemeMode.DARK)
 
-        dataSource.themeMode.test {
-            assertEquals(ThemeMode.DARK, awaitItem())
-            cancelAndIgnoreRemainingEvents()
+            dataSource.themeMode.test {
+                assertEquals(ThemeMode.DARK, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `setDynamicColor false persists disabled state`() = runTest {
-        dataSource.setDynamicColor(false)
+    fun `setDynamicColor false persists disabled state`() =
+        runTest {
+            dataSource.setDynamicColor(false)
 
-        dataSource.isDynamicColorEnabled.test {
-            assertEquals(false, awaitItem())
-            cancelAndIgnoreRemainingEvents()
+            dataSource.isDynamicColorEnabled.test {
+                assertEquals(false, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `setBiometricEnabled true persists enabled state`() = runTest {
-        dataSource.setBiometricEnabled(true)
+    fun `setBiometricEnabled true persists enabled state`() =
+        runTest {
+            dataSource.setBiometricEnabled(true)
 
-        dataSource.isBiometricEnabled.test {
-            assertEquals(true, awaitItem())
-            cancelAndIgnoreRemainingEvents()
+            dataSource.isBiometricEnabled.test {
+                assertEquals(true, awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
     @Test
-    fun `clearAll resets all preferences to defaults`() = runTest {
-        dataSource.saveConnection(testConnection("a"))
-        dataSource.updateThemeMode(ThemeMode.DARK)
-        dataSource.setBiometricEnabled(true)
+    fun `clearAll resets all preferences to defaults`() =
+        runTest {
+            dataSource.saveConnection(testConnection("a"))
+            dataSource.updateThemeMode(ThemeMode.DARK)
+            dataSource.setBiometricEnabled(true)
 
-        dataSource.clearAll()
+            dataSource.clearAll()
 
-        dataSource.preferences.test {
-            assertEquals(LucentPreferences(), awaitItem())
-            cancelAndIgnoreRemainingEvents()
+            dataSource.preferences.test {
+                assertEquals(LucentPreferences(), awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
         }
-    }
 
-    private fun testConnection(id: String) = ServerConnection(
-        baseUrl = "https://firefly-$id.local",
-        encryptedPat = "encrypted-pat-$id",
-        userId = "user-$id",
-        userEmail = "$id@example.com",
-    )
+    private fun testConnection(id: String) =
+        ServerConnection(
+            baseUrl = "https://firefly-$id.local",
+            encryptedPat = "encrypted-pat-$id",
+            userId = "user-$id",
+            userEmail = "$id@example.com",
+        )
 }
