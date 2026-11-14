@@ -105,11 +105,11 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun DashboardRoute(
-    viewModel: DashboardViewModel = koinViewModel(),
     onNavigateToQuickAdd: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToTransactionDetail: (String) -> Unit = {},
     onNavigateToAccountDetail: (String) -> Unit = {},
+    viewModel: DashboardViewModel = koinViewModel(),
 ) {
     val state by viewModel.collectState()
     val transactions = viewModel.transactions.collectAsLazyPagingItems()

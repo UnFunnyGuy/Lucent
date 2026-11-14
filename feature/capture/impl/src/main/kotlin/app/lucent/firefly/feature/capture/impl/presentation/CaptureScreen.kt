@@ -81,8 +81,8 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun CaptureRoute(
-    viewModel: CaptureViewModel = koinViewModel(),
     onDismiss: () -> Unit,
+    viewModel: CaptureViewModel = koinViewModel(),
 ) {
     val state by viewModel.collectState()
 
@@ -92,7 +92,10 @@ fun CaptureRoute(
         }
     }
 
-    CaptureScreen(state = state, onAction = viewModel::onAction)
+    CaptureScreen(
+        state = state,
+        onAction = viewModel::onAction,
+    )
 }
 
 private val CAPTURE_TYPES = listOf(TransactionType.WITHDRAWAL, TransactionType.DEPOSIT, TransactionType.TRANSFER)

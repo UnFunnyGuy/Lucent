@@ -51,7 +51,6 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun OnboardingRoute(
     onNavigateToDashboard: () -> Unit,
-    modifier: Modifier = Modifier,
     viewModel: OnboardingViewModel = koinViewModel(),
 ) {
     val state by viewModel.collectState()
@@ -72,7 +71,6 @@ fun OnboardingRoute(
     OnboardingScreen(
         state = state,
         onAction = viewModel::onAction,
-        modifier = modifier,
         snackbarHostState = snackbarHostState,
     )
 }
