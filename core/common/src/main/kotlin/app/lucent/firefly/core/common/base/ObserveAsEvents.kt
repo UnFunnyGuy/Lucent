@@ -5,7 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 /**
  * Collects values from a [Flow] emitting UI events and delivers them to the [collector]
@@ -14,15 +16,17 @@ import kotlinx.coroutines.flow.Flow
  * Ensures one-time events (like navigation or messages) are not consumed while in background.
  */
 @Composable
-fun <T : UIEvent> SingleEventEffect(
-    sideEffectFlow: Flow<T>,
+fun <T : UIEvent> ObserveAsEvents(
+    eventFlow: Flow<T>,
     lifeCycleState: Lifecycle.State = Lifecycle.State.STARTED,
     collector: (T) -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(sideEffectFlow, lifecycleOwner) {
+    LaunchedEffect(eventFlow, lifecycleOwner.lifecycle) {
         lifecycleOwner.repeatOnLifecycle(lifeCycleState) {
-            sideEffectFlow.collect(collector)
+            withContext(Dispatchers.Main.immediate) {
+                eventFlow.collect(collector)
+            }
         }
     }
 }

@@ -78,7 +78,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import app.lucent.firefly.core.common.base.SingleEventEffect
+import app.lucent.firefly.core.common.base.ObserveAsEvents
 import app.lucent.firefly.core.common.base.collectState
 import app.lucent.firefly.core.common.model.Currency
 import app.lucent.firefly.core.common.model.Money
@@ -112,7 +112,7 @@ fun DashboardRoute(
     val state by viewModel.collectState()
     val transactions = viewModel.transactions.collectAsLazyPagingItems()
 
-    SingleEventEffect(viewModel.uiEvent) { event ->
+    ObserveAsEvents(viewModel.uiEvent) { event ->
         when (event) {
             DashboardUiEvent.NavigateToQuickAdd -> onNavigateToQuickAdd()
             DashboardUiEvent.NavigateToLogin -> onNavigateToLogin()

@@ -56,7 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import app.lucent.firefly.core.common.base.SingleEventEffect
+import app.lucent.firefly.core.common.base.ObserveAsEvents
 import app.lucent.firefly.core.common.base.collectState
 import app.lucent.firefly.core.common.model.Currency
 import app.lucent.firefly.core.common.model.Money
@@ -84,7 +84,7 @@ fun CaptureRoute(
 ) {
     val state by viewModel.collectState()
 
-    SingleEventEffect(viewModel.uiEvent) { event ->
+    ObserveAsEvents(viewModel.uiEvent) { event ->
         when (event) {
             CaptureUiEvent.Dismiss -> onDismiss()
         }

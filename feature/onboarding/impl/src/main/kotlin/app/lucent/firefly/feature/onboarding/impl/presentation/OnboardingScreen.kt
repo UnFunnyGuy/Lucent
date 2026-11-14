@@ -29,7 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import app.lucent.firefly.core.common.base.SingleEventEffect
+import app.lucent.firefly.core.common.base.ObserveAsEvents
 import app.lucent.firefly.core.common.base.collectState
 import app.lucent.firefly.core.designsystem.theme.LucentTheme
 import app.lucent.firefly.core.ui.component.ScreenWrapper
@@ -51,7 +51,7 @@ fun OnboardingRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    SingleEventEffect(viewModel.uiEvent) { event ->
+    ObserveAsEvents(viewModel.uiEvent) { event ->
         when (event) {
             is OnboardingUiEvent.NavigateToDashboard -> onNavigateToDashboard()
             is OnboardingUiEvent.ShowSnackbar -> {
