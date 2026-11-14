@@ -1,0 +1,22 @@
+<resources>
+    <string name="feature_capture_cd_close">Close</string>
+    <string name="feature_capture_title_new">New transaction</string>
+    <string name="feature_capture_type_expense">Expense</string>
+    <string name="feature_capture_type_income">Income</string>
+    <string name="feature_capture_type_transfer">Transfer</string>
+    <string name="feature_capture_no_accounts">No accounts yet. They appear here after the first sync.</string>
+    <string name="feature_capture_picker_from">From</string>
+    <string name="feature_capture_picker_to">To</string>
+    <string name="feature_capture_description_label">Description</string>
+    <string name="feature_capture_description_placeholder_expense">e.g. Groceries</string>
+    <string name="feature_capture_description_placeholder_income">e.g. Salary</string>
+    <string name="feature_capture_description_placeholder_transfer">e.g. Move to savings</string>
+    <string name="feature_capture_date_today">Today</string>
+    <string name="feature_capture_date_yesterday">Yesterday</string>
+    <string name="feature_capture_date_pick">Pick date</string>
+    <string name="feature_capture_notes_label">Note</string>
+    <string name="feature_capture_action_add_note">Add a note</string>
+    <string name="feature_capture_save_button">Save %1$s</string>
+    <string name="feature_capture_dialog_confirm">OK</string>
+    <string name="feature_capture_dialog_cancel">Cancel</string>
+</resources>

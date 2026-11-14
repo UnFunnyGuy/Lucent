@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -66,6 +67,7 @@ import app.lucent.firefly.core.ui.format.formatAmount
 import app.lucent.firefly.data.accounts.api.model.Account
 import app.lucent.firefly.data.accounts.api.model.AccountType
 import app.lucent.firefly.data.transactions.api.model.TransactionType
+import app.lucent.firefly.feature.capture.impl.R
 import app.lucent.firefly.feature.capture.impl.presentation.viewmodel.CaptureUiAction
 import app.lucent.firefly.feature.capture.impl.presentation.viewmodel.CaptureUiEvent
 import app.lucent.firefly.feature.capture.impl.presentation.viewmodel.CaptureUiState
@@ -114,10 +116,10 @@ fun CaptureScreen(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { onAction(CaptureUiAction.Dismiss) }) {
-                Icon(Icons.Default.Close, contentDescription = "Close")
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.feature_capture_cd_close))
             }
             Text(
-                text = "New transaction",
+                text = stringResource(R.string.feature_capture_title_new),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(start = 4.dp),
             )
@@ -152,14 +154,14 @@ fun CaptureScreen(
         ) {
             if (state.ownAccounts.isEmpty()) {
                 Text(
-                    text = "No accounts yet. They appear here after the first sync.",
+                    text = stringResource(R.string.feature_capture_no_accounts),
                     style = MaterialTheme.typography.bodyMedium,
                     color = LucentTheme.colors.onSurfaceVariant,
                 )
             }
             if (state.needsSource) {
                 AccountPicker(
-                    label = "From",
+                    label = stringResource(R.string.feature_capture_picker_from),
                     accounts = state.sourceOptions,
                     selectedId = state.sourceAccountId,
                     accent = accent,
@@ -168,7 +170,7 @@ fun CaptureScreen(
             }
             if (state.needsDestination) {
                 AccountPicker(
-                    label = "To",
+                    label = stringResource(R.string.feature_capture_picker_to),
                     accounts = state.destinationOptions,
                     selectedId = state.destinationAccountId,
                     accent = accent,
@@ -192,13 +194,13 @@ fun CaptureScreen(
                 OutlinedTextField(
                     value = state.notes,
                     onValueChange = { onAction(CaptureUiAction.UpdateNotes(it)) },
-                    label = { Text("Note") },
+                    label = { Text(stringResource(R.string.feature_capture_notes_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 )
             } else {
                 TextButton(onClick = { onAction(CaptureUiAction.ShowNotes) }) {
-                    Text("Add a note")
+                    Text(stringResource(R.string.feature_capture_action_add_note))
                 }
             }
 
@@ -230,7 +232,10 @@ fun CaptureScreen(
             if (state.isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             } else {
-                Text(text = "Save ${state.type.label().lowercase()}", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = stringResource(R.string.feature_capture_save_button, state.type.label().lowercase()),
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
 
@@ -257,10 +262,12 @@ fun CaptureScreen(
                         }
                         isDatePickerOpen = false
                     },
-                ) { Text("OK") }
+                ) { Text(stringResource(R.string.feature_capture_dialog_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { isDatePickerOpen = false }) { Text("Cancel") }
+                TextButton(onClick = { isDatePickerOpen = false }) {
+                    Text(stringResource(R.string.feature_capture_dialog_cancel))
+                }
             },
         ) {
             DatePicker(state = pickerState)
@@ -340,13 +347,13 @@ private fun DescriptionField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text("Description") },
+        label = { Text(stringResource(R.string.feature_capture_description_label)) },
         placeholder = {
             Text(
                 when (type) {
-                    TransactionType.DEPOSIT -> "e.g. Salary"
-                    TransactionType.TRANSFER -> "e.g. Move to savings"
-                    else -> "e.g. Groceries"
+                    TransactionType.DEPOSIT -> stringResource(R.string.feature_capture_description_placeholder_income)
+                    TransactionType.TRANSFER -> stringResource(R.string.feature_capture_description_placeholder_transfer)
+                    else -> stringResource(R.string.feature_capture_description_placeholder_expense)
                 },
             )
         },
@@ -371,22 +378,39 @@ private fun DateChips(
     val yesterday = today.minusDays(1)
     val isOtherDay = date != today && date != yesterday
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(selected = date == today, onClick = { onSelect(today) }, label = { Text("Today") })
-        FilterChip(selected = date == yesterday, onClick = { onSelect(yesterday) }, label = { Text("Yesterday") })
+        FilterChip(
+            selected = date == today,
+            onClick = { onSelect(today) },
+            label = { Text(stringResource(R.string.feature_capture_date_today)) },
+        )
+        FilterChip(
+            selected = date == yesterday,
+            onClick = { onSelect(yesterday) },
+            label = { Text(stringResource(R.string.feature_capture_date_yesterday)) },
+        )
         FilterChip(
             selected = isOtherDay,
             onClick = onPickDate,
-            label = { Text(if (isOtherDay) date.format(DateTimeFormatter.ofPattern("d MMM yyyy")) else "Pick date") },
+            label = {
+                Text(
+                    if (isOtherDay) {
+                        date.format(DateTimeFormatter.ofPattern("d MMM yyyy"))
+                    } else {
+                        stringResource(R.string.feature_capture_date_pick)
+                    },
+                )
+            },
             leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(18.dp)) },
         )
     }
 }
 
+@Composable
 private fun TransactionType.label(): String =
     when (this) {
-        TransactionType.DEPOSIT -> "Income"
-        TransactionType.TRANSFER -> "Transfer"
-        else -> "Expense"
+        TransactionType.DEPOSIT -> stringResource(R.string.feature_capture_type_income)
+        TransactionType.TRANSFER -> stringResource(R.string.feature_capture_type_transfer)
+        else -> stringResource(R.string.feature_capture_type_expense)
     }
 
 @Composable

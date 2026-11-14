@@ -2,7 +2,6 @@ package app.lucent.firefly.feature.onboarding.impl.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,13 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -30,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -39,6 +37,7 @@ import app.lucent.firefly.core.common.base.ObserveAsEvents
 import app.lucent.firefly.core.common.base.collectState
 import app.lucent.firefly.core.designsystem.theme.LucentTheme
 import app.lucent.firefly.core.ui.component.AppScaffold
+import app.lucent.firefly.feature.onboarding.impl.R
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiAction
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiEvent
 import app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel.OnboardingUiState
@@ -51,9 +50,9 @@ import org.koin.compose.viewmodel.koinViewModel
  */
 @Composable
 fun OnboardingRoute(
-    viewModel: OnboardingViewModel = koinViewModel(),
     onNavigateToDashboard: () -> Unit,
     modifier: Modifier = Modifier,
+    viewModel: OnboardingViewModel = koinViewModel(),
 ) {
     val state by viewModel.collectState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -86,17 +85,13 @@ fun OnboardingScreen(
     state: OnboardingUiState,
     onAction: (OnboardingUiAction) -> Unit,
     modifier: Modifier = Modifier,
-    snackbarHostState: SnackbarHostState? = null,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
     val focusManager = LocalFocusManager.current
 
     AppScaffold(
         modifier = modifier,
-        snackbarHost = {
-            if (snackbarHostState != null) {
-                SnackbarHost(hostState = snackbarHostState)
-            }
-        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
     ) { innerPadding ->
         Column(
             modifier =
@@ -113,7 +108,7 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Welcome to Lucent",
+                text = stringResource(R.string.feature_onboarding_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = LucentTheme.colors.primary,
             )
@@ -121,7 +116,7 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Connect to your Firefly III server",
+                text = stringResource(R.string.feature_onboarding_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = LucentTheme.colors.onSurfaceVariant,
             )
@@ -132,8 +127,8 @@ fun OnboardingScreen(
             OutlinedTextField(
                 value = state.serverUrl,
                 onValueChange = { onAction(OnboardingUiAction.UpdateServerUrl(it)) },
-                label = { Text("Server URL") },
-                placeholder = { Text("https://firefly.example.com") },
+                label = { Text(stringResource(R.string.feature_onboarding_server_url_label)) },
+                placeholder = { Text(stringResource(R.string.feature_onboarding_server_url_placeholder)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions =
@@ -145,8 +140,7 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Self-signed certificate toggle
-            Row(
+            /*Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -156,11 +150,11 @@ fun OnboardingScreen(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Trust self-signed / homelab TLS certificate",
+                    text = stringResource(R.string.feature_onboarding_allow_self_signed),
                     style = MaterialTheme.typography.bodySmall,
                     color = LucentTheme.colors.onBackground,
                 )
-            }
+            }*/
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -168,8 +162,8 @@ fun OnboardingScreen(
             OutlinedTextField(
                 value = state.token,
                 onValueChange = { onAction(OnboardingUiAction.UpdateToken(it)) },
-                label = { Text("Personal Access Token (PAT)") },
-                placeholder = { Text("Paste your Firefly III token") },
+                label = { Text(stringResource(R.string.feature_onboarding_token_label)) },
+                placeholder = { Text(stringResource(R.string.feature_onboarding_token_placeholder)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
@@ -191,7 +185,7 @@ fun OnboardingScreen(
             if (state.errorMessage != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = state.errorMessage,
+                    text = state.errorMessage.asString(),
                     color = LucentTheme.colors.error,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -212,7 +206,7 @@ fun OnboardingScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Connect")
+                    Text(stringResource(R.string.feature_onboarding_connect_button))
                 }
             }
         }

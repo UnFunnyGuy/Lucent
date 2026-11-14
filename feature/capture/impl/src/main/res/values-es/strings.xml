@@ -1,0 +1,22 @@
+<resources>
+    <string name="feature_capture_cd_close">Cerrar</string>
+    <string name="feature_capture_title_new">Nueva transacción</string>
+    <string name="feature_capture_type_expense">Gasto</string>
+    <string name="feature_capture_type_income">Ingreso</string>
+    <string name="feature_capture_type_transfer">Transferencia</string>
+    <string name="feature_capture_no_accounts">Aún no hay cuentas. Aparecerán aquí tras la primera sincronización.</string>
+    <string name="feature_capture_picker_from">Origen</string>
+    <string name="feature_capture_picker_to">Destino</string>
+    <string name="feature_capture_description_label">Descripción</string>
+    <string name="feature_capture_description_placeholder_expense">ej. Comestibles</string>
+    <string name="feature_capture_description_placeholder_income">ej. Salario</string>
+    <string name="feature_capture_description_placeholder_transfer">ej. Ahorros</string>
+    <string name="feature_capture_date_today">Hoy</string>
+    <string name="feature_capture_date_yesterday">Ayer</string>
+    <string name="feature_capture_date_pick">Elegir fecha</string>
+    <string name="feature_capture_notes_label">Nota</string>
+    <string name="feature_capture_action_add_note">Añadir una nota</string>
+    <string name="feature_capture_save_button">Guardar %1$s</string>
+    <string name="feature_capture_dialog_confirm">Aceptar</string>
+    <string name="feature_capture_dialog_cancel">Cancelar</string>
+</resources>

@@ -1,8 +1,10 @@
 package app.lucent.firefly.feature.onboarding.impl.presentation.viewmodel
 
 import app.lucent.firefly.core.common.base.BaseViewModel
+import app.lucent.firefly.core.common.base.asUiText
 import app.lucent.firefly.core.common.result.Result
 import app.lucent.firefly.data.auth.api.usecase.AuthenticateUseCase
+import app.lucent.firefly.feature.onboarding.impl.R
 import org.koin.core.annotation.KoinViewModel
 
 @KoinViewModel
@@ -32,11 +34,11 @@ class OnboardingViewModel(
         val token = currentState.token.trim()
 
         if (url.isBlank()) {
-            update { copy(errorMessage = "Please enter a valid server URL.") }
+            update { copy(errorMessage = R.string.feature_onboarding_error_blank_url.asUiText()) }
             return
         }
         if (token.isBlank()) {
-            update { copy(errorMessage = "Please enter your Personal Access Token (PAT).") }
+            update { copy(errorMessage = R.string.feature_onboarding_error_blank_token.asUiText()) }
             return
         }
 
@@ -59,7 +61,7 @@ class OnboardingViewModel(
                     update {
                         copy(
                             isLoading = false,
-                            errorMessage = result.error.errorMessage,
+                            errorMessage = result.error.errorMessage.asUiText(),
                         )
                     }
                 }

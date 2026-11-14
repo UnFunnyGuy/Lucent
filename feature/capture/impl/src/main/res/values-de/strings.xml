@@ -1,0 +1,22 @@
+<resources>
+    <string name="feature_capture_cd_close">Schließen</string>
+    <string name="feature_capture_title_new">Neue Transaktion</string>
+    <string name="feature_capture_type_expense">Ausgabe</string>
+    <string name="feature_capture_type_income">Einnahme</string>
+    <string name="feature_capture_type_transfer">Umbuchung</string>
+    <string name="feature_capture_no_accounts">Noch keine Konten. Sie werden hier nach der ersten Synchronisierung angezeigt.</string>
+    <string name="feature_capture_picker_from">Von</string>
+    <string name="feature_capture_picker_to">Nach</string>
+    <string name="feature_capture_description_label">Beschreibung</string>
+    <string name="feature_capture_description_placeholder_expense">z. B. Lebensmittel</string>
+    <string name="feature_capture_description_placeholder_income">z. B. Gehalt</string>
+    <string name="feature_capture_description_placeholder_transfer">z. B. Auf Sparkonto überweisen</string>
+    <string name="feature_capture_date_today">Heute</string>
+    <string name="feature_capture_date_yesterday">Gestern</string>
+    <string name="feature_capture_date_pick">Datum wählen</string>
+    <string name="feature_capture_notes_label">Notiz</string>
+    <string name="feature_capture_action_add_note">Notiz hinzufügen</string>
+    <string name="feature_capture_save_button">%1$s speichern</string>
+    <string name="feature_capture_dialog_confirm">OK</string>
+    <string name="feature_capture_dialog_cancel">Abbrechen</string>
+</resources>

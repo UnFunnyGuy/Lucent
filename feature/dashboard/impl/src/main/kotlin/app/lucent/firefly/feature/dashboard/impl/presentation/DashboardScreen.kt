@@ -67,6 +67,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -91,6 +92,7 @@ import app.lucent.firefly.data.sync.api.model.FailedChange
 import app.lucent.firefly.data.transactions.api.model.Transaction
 import app.lucent.firefly.data.transactions.api.model.TransactionSplit
 import app.lucent.firefly.data.transactions.api.model.TransactionType
+import app.lucent.firefly.feature.dashboard.impl.R
 import app.lucent.firefly.feature.dashboard.impl.presentation.viewmodel.DashboardUiAction
 import app.lucent.firefly.feature.dashboard.impl.presentation.viewmodel.DashboardUiEvent
 import app.lucent.firefly.feature.dashboard.impl.presentation.viewmodel.DashboardUiState
@@ -164,7 +166,7 @@ fun DashboardScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                text = { Text("Add") },
+                text = { Text(stringResource(R.string.feature_dashboard_action_add)) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 onClick = { onAction(DashboardUiAction.OpenQuickAdd) },
                 expanded = isFabExpanded,
@@ -194,18 +196,19 @@ fun DashboardScreen(
     state.logoutConfirmationPendingCount?.let { count ->
         AlertDialog(
             onDismissRequest = { onAction(DashboardUiAction.CancelLogout) },
-            title = { Text("Changes not uploaded yet") },
+            title = { Text(stringResource(R.string.feature_dashboard_logout_dialog_title)) },
             text = {
-                Text(
-                    "$count change(s) haven't reached the server. They stay on this device and upload " +
-                        "when you sign in to the same server and account again.",
-                )
+                Text(stringResource(R.string.feature_dashboard_logout_dialog_message, count))
             },
             confirmButton = {
-                TextButton(onClick = { onAction(DashboardUiAction.ConfirmLogout) }) { Text("Log out") }
+                TextButton(onClick = { onAction(DashboardUiAction.ConfirmLogout) }) {
+                    Text(stringResource(R.string.feature_dashboard_action_logout))
+                }
             },
             dismissButton = {
-                TextButton(onClick = { onAction(DashboardUiAction.CancelLogout) }) { Text("Stay") }
+                TextButton(onClick = { onAction(DashboardUiAction.CancelLogout) }) {
+                    Text(stringResource(R.string.feature_dashboard_action_stay))
+                }
             },
         )
     }
@@ -223,7 +226,7 @@ private fun DashboardTopBar(
         title = {
             Column {
                 Text(
-                    text = "Lucent",
+                    text = stringResource(R.string.feature_dashboard_title),
                     style = MaterialTheme.typography.titleLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -242,11 +245,14 @@ private fun DashboardTopBar(
             SyncStatusButton(state = state, onClick = onSync)
             Box {
                 IconButton(onClick = { isMenuOpen = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.feature_dashboard_cd_more_options),
+                    )
                 }
                 DropdownMenu(expanded = isMenuOpen, onDismissRequest = { isMenuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text("Log out") },
+                        text = { Text(stringResource(R.string.feature_dashboard_action_logout)) },
                         onClick = {
                             isMenuOpen = false
                             onLogout()
@@ -271,15 +277,30 @@ private fun SyncStatusButton(
             state.requiresReauthentication || state.failedChanges.isNotEmpty() ->
                 Icon(
                     Icons.Default.ErrorOutline,
-                    contentDescription = "Sync needs attention",
+                    contentDescription = stringResource(R.string.feature_dashboard_cd_sync_needs_attention),
                     tint = LucentTheme.colors.error,
                 )
-            !state.isOnline -> Icon(Icons.Default.CloudOff, contentDescription = "Offline")
+            !state.isOnline ->
+                Icon(
+                    Icons.Default.CloudOff,
+                    contentDescription = stringResource(R.string.feature_dashboard_cd_offline),
+                )
             state.pendingChangesCount > 0 ->
                 BadgedBox(badge = { Badge { Text("${state.pendingChangesCount}") } }) {
-                    Icon(Icons.Default.CloudUpload, contentDescription = "${state.pendingChangesCount} changes waiting to upload")
+                    Icon(
+                        Icons.Default.CloudUpload,
+                        contentDescription =
+                            stringResource(
+                                R.string.feature_dashboard_cd_changes_waiting,
+                                state.pendingChangesCount,
+                            ),
+                    )
                 }
-            else -> Icon(Icons.Default.CloudDone, contentDescription = "Synced")
+            else ->
+                Icon(
+                    Icons.Default.CloudDone,
+                    contentDescription = stringResource(R.string.feature_dashboard_cd_synced),
+                )
         }
     }
 }
@@ -306,11 +327,16 @@ private fun DashboardContent(
 
         if (state.requiresReauthentication) {
             item(key = "reauth") {
-                NoticeBanner("The server rejected your access token. Sign in again to resume syncing.")
+                NoticeBanner(stringResource(R.string.feature_dashboard_banner_reauth))
             }
         } else if (!state.isOnline && state.pendingChangesCount > 0) {
             item(key = "offline") {
-                NoticeBanner("You're offline. ${state.pendingChangesCount} change(s) will upload when you're back online.")
+                NoticeBanner(
+                    stringResource(
+                        R.string.feature_dashboard_banner_offline,
+                        state.pendingChangesCount,
+                    ),
+                )
             }
         }
 
@@ -328,7 +354,10 @@ private fun DashboardContent(
         }
 
         item(key = "transactions-title") {
-            SectionTitle("Transactions", modifier = Modifier.padding(top = 24.dp, bottom = 4.dp))
+            SectionTitle(
+                stringResource(R.string.feature_dashboard_section_transactions),
+                modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
+            )
         }
 
         items(
@@ -352,11 +381,17 @@ private fun DashboardContent(
             loadState.append is LoadState.Loading -> item(key = "append-loading") { LoadingRow() }
             loadState.append is LoadState.Error ->
                 item(key = "append-error") {
-                    RetryRow(message = "Couldn't load older transactions", onRetry = transactions::retry)
+                    RetryRow(
+                        message = stringResource(R.string.feature_dashboard_error_load_older_transactions),
+                        onRetry = transactions::retry,
+                    )
                 }
             transactions.itemCount == 0 && loadState.refresh is LoadState.Error ->
                 item(key = "refresh-error") {
-                    RetryRow(message = "Couldn't load transactions", onRetry = transactions::retry)
+                    RetryRow(
+                        message = stringResource(R.string.feature_dashboard_error_load_transactions),
+                        onRetry = transactions::retry,
+                    )
                 }
             transactions.itemCount == 0 && loadState.refresh is LoadState.NotLoading ->
                 item(key = "empty") {
@@ -379,7 +414,7 @@ private fun OverviewCard(
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
-                text = "Net worth",
+                text = stringResource(R.string.feature_dashboard_net_worth_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = LucentTheme.colors.onPrimaryContainer,
             )
@@ -393,14 +428,14 @@ private fun OverviewCard(
             Spacer(modifier = Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MonthMetric(
-                    label = "In this month",
+                    label = stringResource(R.string.feature_dashboard_month_income_label),
                     value = monthIncome.formatAmount(showPlusSign = true),
                     color = LucentTheme.colors.income,
                     icon = Icons.Default.ArrowDownward,
                     modifier = Modifier.weight(1f),
                 )
                 MonthMetric(
-                    label = "Out this month",
+                    label = stringResource(R.string.feature_dashboard_month_spending_label),
                     value = Money(monthSpending.amount.negate(), monthSpending.currency).formatAmount(),
                     color = LucentTheme.colors.expense,
                     icon = Icons.Default.ArrowUpward,
@@ -441,10 +476,10 @@ private fun AccountsSection(
     onAccountClick: (String) -> Unit,
 ) {
     Column(modifier = Modifier.padding(top = 24.dp)) {
-        SectionTitle("Accounts", modifier = Modifier.padding(bottom = 8.dp))
+        SectionTitle(stringResource(R.string.feature_dashboard_section_accounts), modifier = Modifier.padding(bottom = 8.dp))
         if (accounts.isEmpty()) {
             Text(
-                text = "Your accounts appear here after the first sync.",
+                text = stringResource(R.string.feature_dashboard_accounts_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = LucentTheme.colors.onSurfaceVariant,
             )
@@ -492,7 +527,11 @@ private fun AccountCard(
             )
             if (!account.pendingDelta.isZero) {
                 Text(
-                    text = "${account.pendingDelta.formatAmount(showPlusSign = true)} pending",
+                    text =
+                        stringResource(
+                            R.string.feature_dashboard_pending_delta,
+                            account.pendingDelta.formatAmount(showPlusSign = true),
+                        ),
                     style = MaterialTheme.typography.labelSmall,
                     color = LucentTheme.colors.onSurfaceVariant,
                 )
@@ -519,8 +558,8 @@ private fun DayHeader(date: LocalDate) {
     val today = LocalDate.now()
     val label =
         when {
-            date == today -> "Today"
-            date == today.minusDays(1) -> "Yesterday"
+            date == today -> stringResource(R.string.feature_dashboard_day_today)
+            date == today.minusDays(1) -> stringResource(R.string.feature_dashboard_day_yesterday)
             date.year == today.year -> date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM"))
             else -> date.format(DateTimeFormatter.ofPattern("d MMMM yyyy"))
         }
@@ -589,7 +628,11 @@ private fun TransactionRow(
                         modifier = Modifier.size(12.dp),
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Pending", style = MaterialTheme.typography.labelSmall, color = LucentTheme.colors.onSurfaceVariant)
+                    Text(
+                        text = stringResource(R.string.feature_dashboard_pending_badge),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = LucentTheme.colors.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -630,28 +673,41 @@ private fun NeedsAttentionCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Needs attention",
+                text = stringResource(R.string.feature_dashboard_needs_attention_title),
                 style = MaterialTheme.typography.titleSmall,
                 color = LucentTheme.colors.error,
             )
             changes.forEach { change ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "${change.operation.describe()} couldn't be uploaded: ${change.message}",
+                    text =
+                        stringResource(
+                            R.string.feature_dashboard_needs_attention_message,
+                            change.operation.describe(),
+                            change.message,
+                        ),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Row {
                     if (change.isConflict) {
                         TextButton(onClick = { onAction(DashboardUiAction.KeepLocalChange(change.id)) }) {
-                            Text("Keep mine")
+                            Text(stringResource(R.string.feature_dashboard_action_keep_mine))
                         }
                     } else {
                         TextButton(onClick = { onAction(DashboardUiAction.RetryChange(change.id)) }) {
-                            Text("Retry")
+                            Text(stringResource(R.string.feature_dashboard_action_retry))
                         }
                     }
                     TextButton(onClick = { onAction(DashboardUiAction.DiscardChange(change.id)) }) {
-                        Text(if (change.isConflict) "Use server version" else "Discard")
+                        Text(
+                            stringResource(
+                                if (change.isConflict) {
+                                    R.string.feature_dashboard_action_use_server_version
+                                } else {
+                                    R.string.feature_dashboard_action_discard
+                                },
+                            ),
+                        )
                     }
                 }
             }
@@ -686,7 +742,7 @@ private fun RetryRow(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(message, style = MaterialTheme.typography.bodyMedium, color = LucentTheme.colors.onSurfaceVariant)
-        OutlinedButton(onClick = onRetry) { Text("Retry") }
+        OutlinedButton(onClick = onRetry) { Text(stringResource(R.string.feature_dashboard_action_retry)) }
     }
 }
 
@@ -706,14 +762,17 @@ private fun EmptyTransactions(onAdd: () -> Unit) {
             modifier = Modifier.size(48.dp),
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Text("No transactions yet", style = MaterialTheme.typography.titleMedium)
         Text(
-            "Record your first expense or income.",
+            text = stringResource(R.string.feature_dashboard_empty_transactions_title),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = stringResource(R.string.feature_dashboard_empty_transactions_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = LucentTheme.colors.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onAdd) { Text("Add transaction") }
+        Button(onClick = onAdd) { Text(stringResource(R.string.feature_dashboard_action_add_transaction)) }
     }
 }
 
@@ -752,11 +811,12 @@ private fun TransactionType.icon(): ImageVector =
         else -> Icons.Default.SwapHoriz
     }
 
+@Composable
 private fun SyncOperation.describe(): String =
     when (this) {
-        SyncOperation.CREATE -> "A new transaction"
-        SyncOperation.UPDATE -> "An edit"
-        SyncOperation.DELETE -> "A deletion"
+        SyncOperation.CREATE -> stringResource(R.string.feature_dashboard_op_create)
+        SyncOperation.UPDATE -> stringResource(R.string.feature_dashboard_op_update)
+        SyncOperation.DELETE -> stringResource(R.string.feature_dashboard_op_delete)
     }
 
 @Preview(showBackground = true, heightDp = 900)
