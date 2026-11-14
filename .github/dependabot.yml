@@ -1,0 +1,67 @@
+version: 2
+updates:
+  # 1. GitHub Actions workflow dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+
+  # 2. Gradle & Version Catalog dependencies
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      # AGP, Kotlin compiler, KSP, and Gradle wrapper bundled together
+      build-toolchain:
+        applies-to: version-updates
+        patterns:
+          - "com.android.application"
+          - "com.android.library"
+          - "com.android.tools.build:*"
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"
+          - "gradle-wrapper"
+        exclude-patterns:
+          - "org.jetbrains.kotlinx*"
+
+      # AndroidX libraries (Compose, Lifecycle, Navigation, Room, Paging)
+      androidx:
+        applies-to: version-updates
+        patterns:
+          - "androidx.*"
+
+      # Google libraries (Tink, Material, etc.), excluding KSP
+      google:
+        applies-to: version-updates
+        patterns:
+          - "com.google.*"
+        exclude-patterns:
+          - "com.google.devtools.ksp*"
+
+      # Ktor networking stack
+      ktor:
+        applies-to: version-updates
+        patterns:
+          - "io.ktor*"
+
+      # All other third-party libraries (Koin, Turbine, MockK, Robolectric, etc.)
+      other:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
